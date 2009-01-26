@@ -1,0 +1,4 @@
+== 0.5.0 2009-01-23
+
+* 1 major enhancement:
+  * Initial release (extraction from zena: http://zenadmin.org)
