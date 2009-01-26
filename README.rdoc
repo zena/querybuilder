@@ -11,24 +11,26 @@ can be used for two purposes:
  2. ease writing complex relational queries by abstracting table internals
 
 == SYNOPSIS:
-
+  
+  # Create your own query class (DummyQuery) to parse your specific models (see test/mock).
+  
+  # Compile a query:
   query = DummyQuery.new("images where name like '%flower%' from favorites")
   
-  # 1. Get a string (without evaluating bind variables) of the form
-       "['SELECT ... FROM ... WHERE links.source_id = ?', @node.id]".
-       This string can be used to prepare ruby code (template compilation for example).
-       
-       str   = query.to_s
+  # Get compilation result:
+  query.to_s
+  => "['SELECT ... FROM ... WHERE links.source_id = ?', @node.id]"
     
-  # 2. get SQL (evaluate bind variables in the current binding). Produces
-       "SELECT ... FROM ... WHERE links.source_id = 48762".
-       
-       sql   = query.sql(binding)
+  # Evaluate bind variables (produces executable SQL):
+  query.sql(binding)
+  => "SELECT ... FROM ... WHERE links.source_id = 1234"
       
-  # 3. get SQL to count
+  # Compile to get count instead of records:
+  query.to_s(:count)
+  => "['SELECT COUNT(*) ... WHERE links.source_id = ?', @node.id]"
   
-       sql_count_str = query.to_s(:count)
-       sql_count = query.sql(binding, :count)
+  query.sql(binding, :count)
+  => "SELECT COUNT(*) ... WHERE links.source_id = 1234"
   
   
 == REQUIREMENTS:
