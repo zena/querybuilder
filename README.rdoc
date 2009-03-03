@@ -1,4 +1,4 @@
-= querybuilder
+= QueryBuilder
 
 * http://github.com/zena/querybuilder/tree/master
 

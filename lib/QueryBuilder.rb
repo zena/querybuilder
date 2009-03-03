@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.0'
+  VERSION = '0.5.1'
   
   @@main_table = {}
   @@main_class = {}
@@ -28,24 +28,30 @@ class QueryBuilder
       @@main_class[self] = main_class.to_s
     end
     
-    # Load prepared SQL definitions from a directory.
+    # Load prepared SQL definitions from a set of directories. If the file does not contain "host" or "hosts" keys,
+    # the filename is used as host.
     #
     # ==== Parameters
     # query<String>:: Path to list of custom queries yaml files.
     #
     # ==== Examples
-    #   DummyQuery.load_custom_queries("/path/to/directory")
+    #   DummyQuery.load_custom_queries("/path/to/some/*/directory")
     #
     # The format of a custom query definition is:
     #
-    #   DummyQuery:    # QueryBuilder class
-    #     abc:        # query's relation name
-    #       select:   # selected fields
+    #   hosts:
+    #     - test.host
+    #   DummyQuery:      # QueryBuilder class
+    #     abc:           # query's relation name
+    #       select:      # selected fields
     #         - 'a'
     #         - '34 AS number'
     #         - 'c'
-    #       tables:   # tables used
+    #       tables:      # tables used
     #         - 'test'
+    #       join_tables: # joins
+    #         test:
+    #           - LEFT JOIN other ON other.test_id = test.id
     #       where:    # filters
     #         - '1'
     #         - '2'
@@ -54,21 +60,26 @@ class QueryBuilder
     #
     # Once loaded, this 'custom query' can be used in a query like:
     #   "images from abc where a > 54"
-    def load_custom_queries(dir)
+    def load_custom_queries(directories)
       klass = nil
-      if File.directory?(dir)
-        Dir.foreach(dir) do |file|
-          next unless file =~ /(.+).yml$/
-          custom_query_group = $1
-          definitions = YAML::load(File.read(File.join(dir,file)))
-          definitions.each do |klass,v|
-            klass = Module.const_get(klass)
-            raise ArgumentError.new("invalid class for CustomQueries (#{klass})") unless klass.ancestors.include?(QueryBuilder)
-            @@custom_queries[klass] ||= {}
-            @@custom_queries[klass][custom_query_group] ||= {}
-            klass_queries = @@custom_queries[klass][custom_query_group]
-            v.each do |k,v|
-              klass_queries[k] = v
+      Dir.glob(directories).each do |dir|
+        if File.directory?(dir)
+          Dir.foreach(dir) do |file|
+            next unless file =~ /(.+).yml$/
+            custom_query_groups = $1
+            definitions = YAML::load(File.read(File.join(dir,file)))
+            custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
+            definitions.each do |klass,v|
+              klass = Module.const_get(klass)
+              raise ArgumentError.new("invalid class for CustomQueries (#{klass})") unless klass.ancestors.include?(QueryBuilder)
+              @@custom_queries[klass] ||= {}
+              custom_query_groups.each do |custom_query_group|
+                @@custom_queries[klass][custom_query_group] ||= {}
+                klass_queries = @@custom_queries[klass][custom_query_group]
+                v.each do |k,v|
+                  klass_queries[k] = v
+                end
+              end
             end
           end
         end

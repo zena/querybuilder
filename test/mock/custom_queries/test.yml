@@ -1,14 +1,13 @@
 DummyQuery:
-  # form_dates
   abc:
     select:
-      - 'a'
-      - '34 AS number'
-      - 'c'
+      - a
+      - 34 AS number
+      - c
     tables:
-      - 'test'
+      - test
     where:
       - '1'
       - '2'
       - '3'
-    order:  'a'
+    order: a ASC

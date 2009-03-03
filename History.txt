@@ -1,3 +1,8 @@
+== 0.5.1 2009-03-03
+
+* 1 minor enhancement:
+  * Added support for glob directories in load_custom_queries
+  
 == 0.5.0 2009-01-23
 
 * 1 major enhancement:

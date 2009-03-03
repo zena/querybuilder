@@ -2,7 +2,7 @@ class DummyQuery < QueryBuilder
   set_main_table 'objects'
   set_main_class 'DummyQueryClass'
   
-  load_custom_queries File.join(File.dirname(__FILE__), 'custom_queries')
+  load_custom_queries File.join(File.dirname(__FILE__), '*')
   
   # Build joins and filters from a relation.
   def parse_relation(rel, context)

@@ -55,12 +55,6 @@ recipients_or_objects:
     - "objects"
   res: "[\"SELECT objects.* FROM objects,links WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
 
-custom_query:
-  context:
-    custom_query_group: test
-  src: "abc"
-  res: "\"SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a\""
-
 count_sql:
   src: "objects in project"
   count: "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
