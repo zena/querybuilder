@@ -1,3 +1,9 @@
+== 0.5.2 2009-04-03
+
+* 1 minor enhancement:
+  * Added support for main_table option in custom queries
+  * More tests for custom queries
+  
 == 0.5.1 2009-03-03
 
 * 1 minor enhancement:
