@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.1'
+  VERSION = '0.5.2'
   
   @@main_table = {}
   @@main_class = {}
@@ -143,7 +143,7 @@ class QueryBuilder
   # => "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
   def to_s(type = :find)
     return nil if !valid?
-    return "\"SELECT #{@main_table}.* FROM #{@main_table} WHERE 0\"" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
+    return "\"SELECT #{main_table}.* FROM #{main_table} WHERE 0\"" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
     statement, bind_values = build_statement(type)
     bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
   end
@@ -166,7 +166,7 @@ class QueryBuilder
   # => "SELECT COUNT(*) FROM objects WHERE objects.project_id = 12489"
   def sql(bindings, type = :find)
     return nil if !valid?
-    return "SELECT #{@main_table}.* FROM #{@main_table} WHERE 0" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
+    return "SELECT #{main_table}.* FROM #{main_table} WHERE 0" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
     statement, bind_values = build_statement(type)
     connection = get_connection(bindings)
     statement.gsub('?') { eval_bound_value(bind_values.shift, connection, bindings) }
@@ -215,7 +215,7 @@ class QueryBuilder
     end
     
     def main_table
-      @@main_table[self.class]
+      @main_table || @@main_table[self.class]
     end
   
     def parse_part(part, is_last)
@@ -595,12 +595,12 @@ class QueryBuilder
     def field_or_attr(fld, table_name = table, context = nil)
       if fld =~ /^\d+$/
         return fld
-      elsif @select.join =~ / AS #{fld}/
-        @select.each do |s|
-          if s =~ /\A(.*) AS #{fld}\Z/
-            return context == :filter ? "(#{$1})" : fld
-          end
+      elsif !(list = @select.select {|e| e =~ /\A#{fld}\Z|AS #{fld}|\.#{fld}\Z/}).empty?
+        res = list.first
+        if res =~ /\A(.*) AS #{fld}\Z/
+          res = $1
         end
+        return context == :filter ? "(#{res})" : res
       elsif table_name
         map_field(fld, table_name, context)
       else
@@ -858,8 +858,6 @@ class QueryBuilder
       @needed_join_tables = {}
 
       @errors  = []
-
-      @main_table ||= 'objects'
 
       @select  = []
 

@@ -1,0 +1,8 @@
+group: test2
+
+DummyQuery:
+  bar:
+    select:
+      - bar
+    tables:
+      - bart

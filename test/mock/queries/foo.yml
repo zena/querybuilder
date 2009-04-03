@@ -1,0 +1,11 @@
+groups:
+  - test
+  - test2
+
+DummyQuery:
+  foo:
+    select:
+      - foo
+    tables:
+      - foot
+    order: f DESC

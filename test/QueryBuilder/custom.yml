@@ -1,0 +1,50 @@
+# test2 context (queries = [abc,foo])
+
+it_should_be_available:
+  context:
+    custom_query_group: test
+  src: "abc"
+  res: "\"SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC\""
+
+it_should_be_customizable:
+  context:
+    custom_query_group: test
+  src: "foo where name < 50"
+  res: "\"SELECT foo FROM foot WHERE objects.name < 50 ORDER BY f DESC\""
+
+it_should_be_customizable_with_select_attributes:
+  context:
+    custom_query_group: test
+  src: "abc where number < 50"
+  res: "\"SELECT a,34 AS number,c FROM test WHERE (34) < 50 AND 3 AND 2 AND 1 ORDER BY a ASC\""
+
+it_should_not_find_queries_not_in_group:
+  context:
+    custom_query_group: test
+  src: "bar"
+  res: "unknown relation 'bar'"
+
+# test2 context (queries = [foo,bar])
+it_should_not_find_queries_not_in_file_named_group:
+  context:
+    custom_query_group: test2
+  src: "abc"
+  res: "unknown relation 'abc'"
+
+it_should_find_queries_in_group_list:
+  context:
+    custom_query_group: test2
+  src: "bar"
+  res: "\"SELECT bar FROM bart\""
+
+it_should_use_the_first_table_as_main:
+  context:
+    custom_query_group: test
+  src: "two_table where x = '4' and name like 'B%'"
+  res: "[\"SELECT x,IF(table_one.y,table_one.y,table_two.z) AS y,table_two.name FROM table_one,table_two WHERE (x) = ? AND (table_two.name) LIKE ?\", \"4\", \"B%\"]"
+
+it_should_use_main_table_as_main:
+  context:
+    custom_query_group: test
+  src: "two_table_main where name = '4'"
+  res: "[\"SELECT x FROM table_one,foo,table_two WHERE foo.name = ?\", \"4\"]"
