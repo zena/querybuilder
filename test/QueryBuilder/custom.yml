@@ -48,3 +48,15 @@ it_should_use_main_table_as_main:
     custom_query_group: test
   src: "two_table_main where name = '4'"
   res: "[\"SELECT x FROM table_one,foo,table_two WHERE foo.name = ?\", \"4\"]"
+
+it_should_limit_the_entries:
+  context:
+    custom_query_group: test
+  src: "abc limit 4"
+  res: "/LIMIT 4/"
+
+it_should_paginate_the_entries:
+  context:
+    custom_query_group: test
+  src: "abc limit 4 paginate foo"
+  res: "[\"SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC LIMIT 4 OFFSET ?\", ((foo.to_i > 0 ? foo.to_i : 1)-1)*4]"

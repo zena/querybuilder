@@ -1,3 +1,8 @@
+== 0.5.3 2009-04-08
+
+* 1 minor enhancement:
+  * Added support for limit and paginate in custom queries
+
 == 0.5.2 2009-04-03
 
 * 1 minor enhancement:

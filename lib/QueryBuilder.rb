@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.2'
+  VERSION = '0.5.3'
   
   @@main_table = {}
   @@main_class = {}
@@ -781,6 +781,14 @@ class QueryBuilder
         clause, filters = elements[-1].split(/\s+where\s+/)
 
         parse_filters(filters) if filters
+        
+        @limit  = parse_limit_clause(@offset_limit_order_group[:limit])
+        if @offset_limit_order_group[:paginate]
+          @offset = parse_paginate_clause(@offset_limit_order_group[:paginate])
+        else
+          @offset = parse_offset_clause(@offset_limit_order_group[:offset])
+        end
+        
         @order = parse_order_clause(@offset_limit_order_group[:order])
       else
         i, new_class = 0, nil
