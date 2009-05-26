@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.3'
+  VERSION = '0.5.4'
   
   @@main_table = {}
   @@main_class = {}
@@ -280,14 +280,14 @@ class QueryBuilder
             return
           end
           allowed = [:op, :bool_op]
-        elsif rest =~ /\A((>=|<=|<>|<|=|>)|((not\s+like|like|lt|le|eq|ne|ge|gt)\s+))/
+        elsif rest =~ /\A((>=|<=|<>|\!=|<|=|>)|((not\s+like|like|lt|le|eq|ne|ge|gt)\s+))/
           unless allowed.include?(:op)
             @errors << clause_error(clause, rest, res) 
             return
           end
           op = $1.strip
           rest = rest[op.size..-1]
-          op = {'lt' => '<','le' => '<=','eq' => '=','ne' => '<>','ge' => '>=','gt' => '>','like' => 'LIKE', 'not like' => 'NOT LIKE'}[op] || $1
+          op = {'lt' => '<', 'le' => '<=', 'eq' => '=', 'ne' => '<>', '!=' => '<>', 'ge' => '>=', 'gt' => '>', 'like' => 'LIKE', 'not like' => 'NOT LIKE'}[op] || $1
           res << op
           allowed = [:value, :par_open]
         elsif rest =~ /\A("|')([^\1]*?)\1/  
@@ -374,7 +374,7 @@ class QueryBuilder
       if par_count > 0
         @errors << "invalid clause #{clause.inspect}: missing closing ')'"
       elsif allowed.include?(:value)
-        @errors << "include clause #{clause.inspect}"
+        @errors << "invalid clause #{clause.inspect}"
       else
         @where << (has_or ? "(#{res})" : res)
       end
@@ -653,7 +653,8 @@ class QueryBuilder
 
       if @group =~ /GROUP\s+BY\s+(.+)/
         # we need to COALESCE in order to count groups where $1 is NULL.
-        count_on = "COUNT(DISTINCT COALESCE(#{$1},0))"
+        fields = $1.split(",").map{|f| "COALESCE(#{f.strip},0)"}.join(",")
+        count_on = "COUNT(DISTINCT #{fields})"
       elsif @distinct
         count_on = "COUNT(DISTINCT #{table}.id)"
       else
