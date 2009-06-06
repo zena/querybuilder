@@ -1,11 +1,14 @@
 empty:
   src: ""
+  sxp: "[:query]"
   res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ?\", id]"
 
 objects:
+  sxp: '[:query, [:relation, "objects"]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ?\", id]"
 
 objects_in_project:
+  sxp: '[:query, [:scope, [:relation, "objects"], "project"]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ?\", project_id]"
 
 objects_in_site:

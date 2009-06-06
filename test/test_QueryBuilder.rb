@@ -21,6 +21,9 @@ class DummyQueryBuilder < Test::Unit::TestCase
       else
         query.errors.join(", ")
       end
+    when 'sxp'
+      # s-expression
+      PseudoSQLParser.parse(source).inspect
     when 'sql'
       query.sql(binding)
     when 'count'

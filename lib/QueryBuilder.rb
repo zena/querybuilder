@@ -1,6 +1,7 @@
 $:.unshift(File.dirname(__FILE__)) unless
   $:.include?(File.dirname(__FILE__)) || $:.include?(File.expand_path(File.dirname(__FILE__)))
 
+require 'pseudo_sql_parser'
 require 'yaml'
 
 =begin rdoc
@@ -219,7 +220,6 @@ class QueryBuilder
     end
   
     def parse_part(part, is_last)
-      
       rest,   context = part.split(' in ')
       clause, filters = rest.split(/\s+where\s+/)
       

@@ -1,6 +1,6 @@
 = QueryBuilder
 
-* http://github.com/zena/querybuilder/tree/master
+* http://zenadmin.org/524
 
 == DESCRIPTION:
 

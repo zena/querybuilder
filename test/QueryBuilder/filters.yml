@@ -1,5 +1,6 @@
 simple:
   src: "objects where name = 'foo' in site"
+  sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:"=", [:field, "name"], [:string, "foo"]]], "site"]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.name = ?\", \"foo\"]"
 
 recipients_that_are_clients:
@@ -28,6 +29,7 @@ custom_query_having:
 
 equation_in_filter:
   src: "objects where event_at > REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:field, "custom_a"]]]]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND objects.event_at > now() + INTERVAL objects.custom_a MONTH\", id]"
 
 equation_in_filter_date:

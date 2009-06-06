@@ -1,6 +1,10 @@
 
 icons_from_recipients:
+  sxp: '[:query, [:from, [:relation, "icons"], [:relation, "recipients"]]]'
   res: "[\"SELECT ob1.* FROM objects,links,objects AS ob1,links AS li1 WHERE ob1.id = li1.source_id AND li1.relation_id = 5 AND li1.target_id = objects.id AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY ob1.id\", id]"
+
+icons_from_recipients_from_letters:
+  sxp: '[:query, [:from, [:relation, "icons"], [:from, [:relation, "recipients"], [:relation, "letters"]]]]'
 
 letters_from_recipients:
   res: "[\"SELECT ob1.* FROM objects,links,objects AS ob1 WHERE ob1.kpath LIKE 'NNL%' AND ob1.parent_id = objects.id AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY ob1.id\", id]"

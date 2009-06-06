@@ -1,6 +1,7 @@
 require 'stringio'
 require 'test/unit'
 require File.dirname(__FILE__) + '/../lib/QueryBuilder'
+require File.dirname(__FILE__) + '/../lib/pseudo_sql_parser'
 require File.dirname(__FILE__) + '/mock/dummy_query'
 require File.dirname(__FILE__) + '/mock/user_query'
 require 'rubygems'
