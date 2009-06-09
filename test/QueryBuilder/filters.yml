@@ -7,8 +7,9 @@ recipients_that_are_clients:
   src: "recipients where kpath like 'NRCC%'"
   res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? AND objects.kpath LIKE ?\", id, \"NRCC%\"]"
 
-pages_in_site_name_like:
+like_filter_with_scope:
   src: "letters where name like 'a%' in site"
+  sxp: '[:query, [:scope, [:filter, [:relation, "letters"], [:like, [:field, "name"], [:string, "a%"]]], "site"]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.name LIKE ?\", \"a%\"]"
 
 pages_in_site_name_not_like:
@@ -16,6 +17,7 @@ pages_in_site_name_not_like:
   res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.name NOT LIKE ?\", \"a%\"]"
 
 letters_group_by_name:
+  sxp: '[:query, [:group, [:relation, "letters"], [:field, "name"]]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ? GROUP BY objects.name\", id]"
 
 recipients_group_by_name:
@@ -32,9 +34,10 @@ equation_in_filter:
   sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:field, "custom_a"]]]]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND objects.event_at > now() + INTERVAL objects.custom_a MONTH\", id]"
 
-equation_in_filter_date:
+equation_with_date_interval:
   src: "objects where event_at > '2006-04-01' + 6 week"
-  res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND objects.event_at > ? + INTERVAL 6 WEEK\", id, \"2006-04-01\"]"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:string, "2006-04-01"], [:interval, [:integer, "6"], "week"]]]]]'
+  res: '["SELECT objects.* FROM objects WHERE objects.parent_id = ? AND objects.event_at > ? + INTERVAL 6 WEEK", id, "2006-04-01"]'
 
 equation_and_or_par:
   src: "objects where event_at > '2006-04-01' or name like 'foo%'"

@@ -8,7 +8,7 @@ class TestUserQuery < QueryBuilder
   
   # Default sort order
   def default_order_clause
-    "name ASC, first_name ASC"
+    "name asc, first_name asc"
   end
   
   def default_context_filter

@@ -10,7 +10,7 @@ DummyQuery:
       - '1'
       - '2'
       - '3'
-    order: a ASC
+    order: a asc
     
   two_table:
     select:

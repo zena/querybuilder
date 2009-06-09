@@ -9,7 +9,7 @@ bad_relation_in_alternate_query:
   res: "unknown relation 'bolobolo'"
 
 order:
-  src: "objects in project order by bad ASC"
+  src: "objects in project order by bad asc"
   res: "invalid field 'bad'"
 
 offset_without_limit:

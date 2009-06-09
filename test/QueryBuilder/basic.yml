@@ -8,17 +8,19 @@ objects:
   res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ?\", id]"
 
 objects_in_project:
-  sxp: '[:query, [:scope, [:relation, "objects"], "project"]]'
+  sxp: '[:query, [:relation, [:scope, "objects", "project"]]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ?\", project_id]"
 
 objects_in_site:
   res: "\"SELECT objects.* FROM objects\""
   
 recipients:
+  sxp: '[:query, [:relation, "recipients"]]'
   res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", id]"
   sql: "SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = [[123]]"
 
 letters_in_project:
+  sxp: '[:query, [:relation, [:scope, "letters", "project"]]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.project_id = ?\", project_id]"
 
 parent:
@@ -26,15 +28,17 @@ parent:
 
 order_single_table:
   src: "objects in project order by name ASC"
-  res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name ASC\", project_id]"
+  sxp: '[:query, [:order, [:relation, [:scope, "objects", "project"]], [:asc, [:field, "name"]]]]'
+  res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name ASC, objects.id DESC\", project_id]"
 
 order_many_tables:
-  src: "recipients order by name ASC"
-  res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? ORDER BY objects.name ASC\", id]"
+  src: "recipients order by name"
+  res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? ORDER BY objects.name\", id]"
 
 order_many_params:
-  src: "objects in project order by name ASC, id DESC"
-  res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name ASC, objects.id DESC\", project_id]"
+  src: "objects in project order by name, id desc"
+  sxp: '[:query, [:order, [:relation, [:scope, "objects", "project"]], [:field, "name"], [:desc, [:field, "id"]]]]'
+  res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name, objects.id DESC\", project_id]"
 
 limit:
   src: "objects in project limit 2"

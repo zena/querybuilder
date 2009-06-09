@@ -12,15 +12,16 @@ class DummyQueryBuilder < Test::Unit::TestCase
   
   def yt_parse(key, source, opts)
     opts = Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)]
-    query = DummyQuery.new(source, opts)
+    query = DummyQuery.new(source, opts) unless key == 'sxp'
     
     case key
     when 'res'
-      (query.main_class != DummyQueryClass ? "#{query.main_class.to_s}: " : '') + if res = query.to_s
-        res
-      else
-        query.errors.join(", ")
-      end
+      NewDummyQuery.new(source).to_s
+      #(query.main_class != DummyQueryClass ? "#{query.main_class.to_s}: " : '') + if res = query.to_s
+      #  res
+      #else
+      #  query.errors.join(", ")
+      #end
     when 'sxp'
       # s-expression
       PseudoSQLParser.parse(source).inspect

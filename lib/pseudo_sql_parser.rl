@@ -13,11 +13,11 @@
           "5"
         ]
       ]
-      [:scope,
-        [:relation,
-          "managers"
-        ],
-        "site"
+      [:relation,
+        [:scope,
+          "managers",
+          "site"
+        ]
       ]
     ],
     "5"
@@ -28,31 +28,35 @@
 class PseudoSQLParser
   # http://dev.mysql.com/doc/refman/5.1/en/operator-precedence.html
   OP_PRECEDENCE = {
-    "INTERVAL" => 20,
-    "BINARY"   => 19, "COLLATE"  => 19,
-    "!" => 18,
-    "@-" => 17, "@~" => 17,
-    "^" => 16,
-    "*" => 15, "/" => 15, "DIV" => 15, "%" => 15, "MOD" => 15,
-    "-" => 14, "+" => 14,
-    "<<" => 13, ">>" => 13,
-    "&" => 12,
-    "|" => 11,
-    "=" => 10, "<=>" => 10, ">=" => 10, ">" => 10, "<=" => 10, "<" => 10, "<>" => 10, "!=" => 10, "IS" => 10, "LIKE" => 10, "REGEXP" => 10, "IN" => 10,
-    "BETWEEN" => 9, "CASE" => 9, "WHEN" => 9, "THEN" => 9, "ELSE" => 9,
-    "NOT" => 8,
-    "&&" => 7, "AND" => 7,
-    "XOR" => 6,
-    "||" => 5, "OR" => 5,
-    ":=" => 4,
-    "RELATION" => 3, "FILTER" => 3,
-    "SCOPE" => 2, "FROM" => 2, "OFFSET" => 2, "PAGINATE" => 2, "LIMIT" => 2, "ORDER" => 2, "GROUP" => 2,
-    "QUERY" => 0,
+    "INTERVAL" => 40,
+    "BINARY"   => 39, "COLLATE"  => 39,
+    "!" => 38,
+    "@-" => 37, "@~" => 37,
+    "^" => 36,
+    "*" => 35, "/" => 35, "DIV" => 35, "%" => 35, "MOD" => 35,
+    "-" => 34, "+" => 34,
+    "<<" => 33, ">>" => 33,
+    "&" => 32,
+    "|" => 31,
+    "=" => 30, "<=>" => 30, ">=" => 30, ">" => 30, "<=" => 30, "<" => 30, "<>" => 30, "!=" => 30, "IS" => 30, "LIKE" => 30, "REGEXP" => 30, "IN" => 30,
+    "BETWEEN" => 29, "CASE" => 29, "WHEN" => 29, "THEN" => 29, "ELSE" => 29,
+    "NOT" => 28,
+    "&&" => 27, "AND" => 27,
+    "XOR" => 26,
+    "||" => 25, "OR" => 25,
+    ":=" => 24,
+    "SCOPE" => 14,
+    "RELATION" => 13, "FILTER" => 13,
+    "FROM" => 11,
+    "ASC"  => 10, "DESC" => 10,
+    "OFFSET" => 9, "PAGINATE" => 9, "LIMIT" => 9, "ORDER" => 9, "GROUP" => 9,
+    "QUERY" => 8,
   }
+  # group < from < filter < relation < scope
 
   # simple_state_machine.rl
   %%{
-    machine hello;
+    machine pseudo_sql;
     
     action str_a {
       str_buf += fc.chr
@@ -78,18 +82,32 @@ class PseudoSQLParser
       str_buf = ""
     }
     
+    action direction {
+      last = apply_op(stack, str_buf.downcase.to_sym, false)
+      str_buf = ""
+    }
+    
     action compare {
       last = apply_op(stack, str_buf.to_sym)
       str_buf = ""
     }
     
     action relation {
+      # stack: [[:query]]  --> [[:query, [:relation, "..."]], [:relation, "..."]]
       last << [:relation, str_buf]
+      stack.push last.last
+      last = stack.last
       str_buf = ""
     }
     
     action operator {
       last = apply_op(stack, str_buf.to_sym)
+      str_buf = ""
+    }
+    
+    action interval {
+      last = apply_op(stack, :interval)
+      last << str_buf
       str_buf = ""
     }
     
@@ -120,7 +138,7 @@ class PseudoSQLParser
     }
     
     action group {
-      last = apply_op(stack, :from)
+      last = apply_op(stack, :group)
     }
     
     action from_ {
@@ -129,8 +147,7 @@ class PseudoSQLParser
     
     action error {
       fhold;
-      puts "Syntax error near '#{data[p..-1]}'."
-      return nil
+      raise Exception.new("Syntax error near '#{data[p..-1]}'.")
     }
     
     action debug {
@@ -147,8 +164,9 @@ class PseudoSQLParser
     number   = (real | integer);
     operator = ws* ('+' | '-') $str_a %operator;
     value_e  = (var %field | string | number);
-    value    = value_e (operator value_e)*;
-    compare  = ws* ('<' | '<=' | '=' | '>=' | '>') $str_a %compare;
+    interval = ws* ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') %interval;
+    value    = value_e (operator value_e interval?)*;
+    compare  = (ws* ('<' | '<=' | '=' | '>=' | '>') $str_a | ws+ 'like' $str_a ws+) %compare;
     relation = ws* var %relation;
     expr     = (value compare value);
     filter   = expr;
@@ -158,8 +176,9 @@ class PseudoSQLParser
     offset   = ws+ 'offset' %offset;
     paginate = ws+ 'paginate' %paginate;
     limit    = ws+ 'limit' %limit;
-    order    = ws+ 'order' ws+ 'by' %order;
-    group    = ws+ 'group' ws+ 'by' %group;
+    direction= ws+ ('asc' | 'desc' | 'ASC' | 'DESC') $str_a %direction;
+    order    = ws+ 'order' ws+ 'by' %order var %field (direction)? (',' var %field (direction)?)*;
+    group    = ws+ 'group' ws+ 'by' %group var %field (',' var %field)*;
     
     part     = (relation filters? scope?);
     
@@ -179,13 +198,15 @@ class PseudoSQLParser
     stack.first
   end
   
-  def self.apply_op(stack, op)
+  def self.apply_op(stack, op, change_last = true)
     pop_stack(stack, op)
     last = stack.last
     change_elem = last.last
     last[-1] = [op.to_sym, change_elem]
-    stack.push last[-1]
-    last[-1]
+    if change_last
+      stack.push last[-1]
+    end
+    stack.last
   end
   
   def self.insert(stack, op, var)

@@ -8,4 +8,4 @@ DummyQuery:
       - foo
     tables:
       - foot
-    order: f DESC
+    order: f desc

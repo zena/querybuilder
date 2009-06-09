@@ -19,11 +19,14 @@ children_from_objects_in_project:
   res: "[\"SELECT ob1.* FROM objects,objects AS ob1 WHERE ob1.parent_id = objects.id AND objects.project_id = ? GROUP BY ob1.id\", project_id]"
   
 tags:
+  sxp: '[:query, [:relation, "tags"]]'
   res: "\"SELECT objects.* FROM objects INNER JOIN tags ON objects.id = tags.node_id\""
 
 letters_in_project_from_letters:
+  sxp: '[:query, [:from, [:relation, [:scope, "letters", "project"]], [:relation, "letters"]]]'
   res: "[\"SELECT ob1.* FROM objects,objects AS ob1 WHERE ob1.kpath LIKE 'NNL%' AND ob1.project_id = objects.id AND objects.kpath LIKE 'NNL%' AND objects.parent_id = ? GROUP BY ob1.id\", id]"
 
 letters_in_project_from_letters_group_by:
   src: "letters in project from letters group by name,id"
+  sxp: '[:query, [:group, [:from, [:scope, [:relation, "letters"], "project"], [:relation, "letters"]], [:field, "name"], [:field, "id"]]]'
   res: "[\"SELECT ob1.* FROM objects,objects AS ob1 WHERE ob1.kpath LIKE 'NNL%' AND ob1.project_id = objects.id AND objects.kpath LIKE 'NNL%' AND objects.parent_id = ? GROUP BY ob1.name, ob1.id\", id]"

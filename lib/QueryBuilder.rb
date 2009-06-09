@@ -1,7 +1,6 @@
 $:.unshift(File.dirname(__FILE__)) unless
   $:.include?(File.dirname(__FILE__)) || $:.include?(File.expand_path(File.dirname(__FILE__)))
 
-require 'pseudo_sql_parser'
 require 'yaml'
 
 =begin rdoc
@@ -11,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.4'
+  VERSION = '0.5.5'
   
   @@main_table = {}
   @@main_class = {}
@@ -220,6 +219,7 @@ class QueryBuilder
     end
   
     def parse_part(part, is_last)
+      
       rest,   context = part.split(' in ')
       clause, filters = rest.split(/\s+where\s+/)
       
@@ -253,6 +253,7 @@ class QueryBuilder
       par_count    = 0
       last_bool_op = ''
       has_or       = false
+      operation    = []
       res          = ""
       while rest != ''
         # puts rest.inspect
@@ -288,7 +289,9 @@ class QueryBuilder
           op = $1.strip
           rest = rest[op.size..-1]
           op = {'lt' => '<', 'le' => '<=', 'eq' => '=', 'ne' => '<>', '!=' => '<>', 'ge' => '>=', 'gt' => '>', 'like' => 'LIKE', 'not like' => 'NOT LIKE'}[op] || $1
-          res << op
+          unless append_to_op(res, operation, op)
+            return
+          end
           allowed = [:value, :par_open]
         elsif rest =~ /\A("|')([^\1]*?)\1/  
           unless allowed.include?(:value)
@@ -296,7 +299,9 @@ class QueryBuilder
             return
           end
           rest = rest[$&.size..-1]
-          res << map_literal($2)
+          unless append_to_op(res, operation, map_literal($2))
+            return
+          end
           allowed = after_value
         elsif rest =~ /\A(\d+|[\w:]+)\s+(second|minute|hour|day|week|month|year)s?/
           unless allowed.include?(:value)
@@ -305,11 +310,9 @@ class QueryBuilder
           end
           rest = rest[$&.size..-1]
           fld, type = $1, $2
-          unless field = field_or_attr(fld, table, :filter)
-            @errors << "invalid field or value #{fld.inspect}"
+          unless append_to_op(res, operation, :field => fld, :dstring => "INTERVAL $1 #{type.upcase}")
             return
           end
-          res << "INTERVAL #{field} #{type.upcase}"
           allowed = after_value
         elsif rest =~ /\A(-?\d+)/  
           unless allowed.include?(:value)
@@ -317,7 +320,9 @@ class QueryBuilder
             return
           end
           rest = rest[$&.size..-1]
-          res << $1
+          unless append_to_op(res, operation, $1)
+            return
+          end
           allowed = after_value
         elsif rest =~ /\A(is\s+not\s+null|is\s+null)/
           unless allowed.include?(:bool_op)
@@ -333,7 +338,9 @@ class QueryBuilder
             return
           end
           rest = rest[8..-1]
-          res << @ref_date
+          unless append_to_op(res, operation, @ref_date)
+            return
+          end
           allowed = after_value
         elsif rest =~ /\A(\+|\-)/  
           unless allowed.include?(:op)
@@ -341,7 +348,9 @@ class QueryBuilder
             return
           end
           rest = rest[$&.size..-1]
-          res << $1
+          unless append_to_op(res, operation, $1)
+            return
+          end
           allowed = [:value, :par_open]
         elsif rest =~ /\A(and|or)/
           unless allowed.include?(:bool_op)
@@ -359,11 +368,9 @@ class QueryBuilder
           end
           rest = rest[$&.size..-1]
           fld = $&
-          unless field = field_or_attr(fld, table, :filter)
-            @errors << "invalid field or value #{fld.inspect}"
+          unless append_to_op(res, operation, fld)
             return
           end
-          res << field
           allowed = after_value
         else  
           @errors << clause_error(clause, rest, res)
@@ -377,6 +384,41 @@ class QueryBuilder
         @errors << "invalid clause #{clause.inspect}"
       else
         @where << (has_or ? "(#{res})" : res)
+      end
+    end
+    
+    def append_to_op(res, operation, opts)
+      if opts.kind_of?(String)
+        operation << opts
+      elsif field = field_or_attr(opts[:field], table, :filter)
+        operation << (opts[:dstring] ? opts[:dstring].sub('$1', field) : field)
+      else
+        # late evaluation
+        operation << opts
+      end
+      
+      if operation.size == 3
+        if op = parse_operation(*operation)
+          res << op
+          operation.replace([])
+          return true
+        else
+          return false
+        end
+      else
+        return true
+      end
+    end
+    
+    def parse_operation(value1, operator, value2)
+      if value1.kind_of?(String) && value2.kind_of?(String)
+        "#{value1} #{operator} #{value2}"
+      elsif value1.kind_of?(Hash)
+        @errors << "invalid field or value #{value1[:field].inspect}"
+        return false
+      else
+        @errors << "invalid field or value #{value2[:field].inspect}"
+        return false
       end
     end
     
@@ -462,13 +504,18 @@ class QueryBuilder
       end
     end
     
-    def add_table(table_name)
-      if !@table_counter[table_name]
-        @table_counter[table_name] = 0
-        @tables << table_name
+    def add_table(use_name, table_name = nil)
+      table_name ||= use_name
+      if !@table_counter[use_name]
+        @table_counter[use_name] = 0
+        if use_name != table_name
+          @tables << "#{table_name} as #{use_name}"
+        else
+          @tables << table_name
+        end
       else  
-        @table_counter[table_name] += 1
-        @tables << "#{table_name} AS #{table(table_name)}"
+        @table_counter[use_name] += 1
+        @tables << "#{table_name} AS #{table(use_name)}"
       end
     end
     
@@ -592,7 +639,7 @@ class QueryBuilder
     end
     
     # Map a field to be used inside a query. An attr is a field from table at index 0 = @node attribute.
-    def field_or_attr(fld, table_name = table, context = nil)
+    def field_or_attr(fld, table_alias = table, context = nil)
       if fld =~ /^\d+$/
         return fld
       elsif !(list = @select.select {|e| e =~ /\A#{fld}\Z|AS #{fld}|\.#{fld}\Z/}).empty?
@@ -601,8 +648,8 @@ class QueryBuilder
           res = $1
         end
         return context == :filter ? "(#{res})" : res
-      elsif table_name
-        map_field(fld, table_name, context)
+      elsif table_alias
+        map_field(fld, table_alias, context)
       else
         map_attr(fld)
       end
@@ -730,9 +777,9 @@ class QueryBuilder
     
     
     # Overwrite this and take car to check for valid fields.
-    def map_field(fld, table_name, context = nil)
+    def map_field(fld, table_alias, context = nil)
       if fld == 'id'
-        "#{table_name}.#{fld}"
+        "#{table_alias}.#{fld}"
       else
         # TODO: error, raise / ignore ?
       end
