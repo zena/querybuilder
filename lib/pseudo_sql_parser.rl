@@ -45,12 +45,15 @@ class PseudoSQLParser
     "XOR" => 26,
     "||" => 25, "OR" => 25,
     ":=" => 24,
-    "SCOPE" => 14,
     "RELATION" => 13, "FILTER" => 13,
+    "SCOPE" => 12,
     "FROM" => 11,
     "ASC"  => 10, "DESC" => 10,
-    "OFFSET" => 9, "PAGINATE" => 9, "LIMIT" => 9, "ORDER" => 9, "GROUP" => 9,
-    "QUERY" => 8,
+    "CLAUSE" => 5,
+    "CLAUSE_AND" => 4,
+    "CLAUSE_OR" => 3,
+    "OFFSET" => 2, "PAGINATE" => 2, "LIMIT" => 2, "ORDER" => 2, "GROUP" => 2,
+    "QUERY" => 1,
   }
   # group < from < filter < relation < scope
 
@@ -93,10 +96,7 @@ class PseudoSQLParser
     }
     
     action relation {
-      # stack: [[:query]]  --> [[:query, [:relation, "..."]], [:relation, "..."]]
-      last << [:relation, str_buf]
-      stack.push last.last
-      last = stack.last
+      last = insert(stack, [:relation, str_buf])
       str_buf = ""
     }
     
@@ -125,6 +125,11 @@ class PseudoSQLParser
       last = apply_op(stack, :offset)
     }
     
+    action param {
+      last << [:param, str_buf]
+      str_buf = ""
+    }
+    
     action paginate {
       last = apply_op(stack, :paginate)
     }
@@ -135,6 +140,7 @@ class PseudoSQLParser
     
     action order {
       last = apply_op(stack, :order)
+      str_buf = ""  # because 'or_clause' is matched (short ambiguity during parsing)
     }
     
     action group {
@@ -143,6 +149,15 @@ class PseudoSQLParser
     
     action from_ {
       last = apply_op(stack, :from)
+    }
+    
+    action join_clause {
+      last = apply_op(stack, "clause_#{str_buf}".to_sym)
+      str_buf = ""
+    }
+    
+    action clause {
+      last = insert(stack, [:clause])
     }
     
     action error {
@@ -173,16 +188,16 @@ class PseudoSQLParser
     filters  = ws+ 'where' %filter ws filter;
     scope    = ws+ 'in' ws var %scope;
     
-    offset   = ws+ 'offset' %offset;
-    paginate = ws+ 'paginate' %paginate;
-    limit    = ws+ 'limit' %limit;
+    offset   = ws+ 'offset' %offset integer;
+    paginate = ws+ 'paginate' %paginate var %param;
+    limit    = ws+ 'limit' %limit integer (ws* ',' integer)?;
     direction= ws+ ('asc' | 'desc' | 'ASC' | 'DESC') $str_a %direction;
-    order    = ws+ 'order' ws+ 'by' %order var %field (direction)? (',' var %field (direction)?)*;
-    group    = ws+ 'group' ws+ 'by' %group var %field (',' var %field)*;
+    order    = ws+ 'order' ws+ 'by' %order var %field (direction)? (ws* ',' var %field (direction)?)*;
+    group    = ws+ 'group' ws+ 'by' %group var %field (ws* ',' var %field)*;
     
     part     = (relation filters? scope?);
-    
-    main    := part (ws+ 'from' %from_ part)* offset? paginate? limit? order? group? '\n' $err(error);
+    clause   = (part (ws+ 'from' %from_ part)*);
+    main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* limit? offset? paginate? order? group? '\n' $err(error);
   }%%
 
   %% write data;
@@ -209,20 +224,32 @@ class PseudoSQLParser
     stack.last
   end
   
-  def self.insert(stack, op, var)
-    pop_stack(stack, op)
-    stack.last << [op.to_sym, var]
-    if var.kind_of?(Array)
-      stack.push var
-    end
+  def self.insert(stack, arg)
+    # insert [:relation, "..."]
+    # stack: [[:query]]  --> [[:query, [:relation, "..."]], [:relation, "..."]]
+    pop_stack(stack, arg.first)
+    last = stack.last
+    last << arg
+    stack.push last.last
     stack.last
   end
   
   def self.pop_stack(stack, op)
+    debug_stack(stack, op)
     stack_op = stack.last.first
-    while OP_PRECEDENCE[op.to_s.upcase] < OP_PRECEDENCE[stack_op.to_s.upcase]
+    while OP_PRECEDENCE[op.to_s.upcase] <= OP_PRECEDENCE[stack_op.to_s.upcase]
       stack.pop
+      debug_stack(stack, op)
       stack_op = stack.last.first
     end
+    puts "done"
+  end
+  
+  def self.debug_stack(stack, msg = '')
+    puts "======= #{msg} ======="
+    stack.reverse_each do |s|
+      puts s.inspect
+    end
+    puts "======================"
   end
 end

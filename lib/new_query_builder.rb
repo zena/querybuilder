@@ -38,13 +38,13 @@ module NewQueryBuilder
     
     def initialize(source)
       @sxp = PseudoSQLParser.parse(source)
-      @context = {}
+      @context = {:last => true}
       @tables = []
       @table_counter = {}
       @join_tables   = {}
-      @select = []
-      @where  = []
-      process(@sxp)
+      @select  = []
+      @where   = []
+      @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
     end
     
     # Convert query object to a string. This string should then be evaluated.
@@ -82,52 +82,67 @@ module NewQueryBuilder
         end
       end
       
+      # A query can be made of many clauses:
+      # [letters from friends] or [images in project]
       def process_query(args)
-        if args.empty?
-          process([:relation, main_table])
-        else
-          process(args)
-        end
+        process(args)
         default_order_clause unless @order
-        @select << "#{table}.*"
+        @select << "#{main_table}.*"
       end
       
       # Parse sub-query from right to left
       def process_from(query, sub_query)
         @distinct = true
-        process(sub_query)
-        # reverse order to make conditionals more easy to understand
-        sub_where = @where
-        @where = []
-        process(query)
-        @where += sub_where
+        if query.first == :scope
+          scope = query.last
+          with(:last => false, :scope => scope) do
+            process(query[1])
+          end
+          table_alias = table
+          where = @where
+          @where = []
+          process(sub_query)
+          sub_where = @where
+          @where = where
+          apply_scope(scope, table_alias)
+          @where += sub_where
+        else
+          with(:last => false) do
+            process(query)
+          end
+          process(sub_query)
+        end
       end
       
       def process_scoped_relation(relation)
-        if relation.kind_of?(String)
+        if context[:scope]
+          process_relation(relation)
+        else
           with(:scope => nil) do
             process_relation(relation)
             apply_scope(context[:scope]) if context[:scope]
           end
-        else
-          process(relation)
         end
       end
       
       def process_scope(relation, scope)
         with(:scope => scope) do
-          process_relation(relation)
+          process(relation)
           apply_scope(scope)
         end
       end
       
-      def apply_scope(scope)
-        # FIXME: is_last ?
-        previous_table_alias = table(main_table,-1)
-        if fields = scope_fields(scope, previous_table_alias.nil?)
-          @where << "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], previous_table_alias)}" if fields != []
+      def apply_scope(scope, left_alias = nil)
+        if left_alias
+          right_alias = table
         else
-          @errors << "Invalid scope '#{scope}'."
+          left_alias  = table
+          right_alias = nil
+        end
+        if fields = scope_fields(scope, right_alias.nil?)
+          @where << "#{field_or_attr(fields[0], left_alias)} = #{field_or_attr(fields[1], right_alias)}" if fields != []
+        else
+          raise ClauseException.new("Invalid scope '#{scope}'.")
         end
       end
       
@@ -143,6 +158,10 @@ module NewQueryBuilder
       
       def process_field(fld_name)
         raise ClauseException.new("Unknown field '#{fld_name}'.")
+      end
+      
+      def process_integer(value)
+        value
       end
       
       def process_attr(fld_name)
@@ -162,8 +181,41 @@ module NewQueryBuilder
       
       def process_order(*args)
         variables = args
-        process(variables.shift)
+        process(variables.shift)  # parse query
         @order = " ORDER BY #{variables.map {|var| process(var)}.join(', ')}"
+      end
+      
+      def process_limit(*args)
+        variables = args
+        process(variables.shift)  # parse query
+        if variables.size == 1
+          @limit  = " LIMIT #{process(variables.first)}"
+        else  
+          @limit  = " LIMIT #{process(variables.last)}"
+          @offset = " OFFSET #{process(variables.first)}"
+        end
+      end
+      
+      def process_offset(query, offset)
+        process(query)
+        @offset = " OFFSET #{process(offset)}"
+      end
+      
+      def process_paginate(query, paginate_fld)
+        process(query)
+        raise ClauseException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @limit
+        fld = process(paginate_fld)
+        if fld && (page_size = @limit[/ LIMIT (\d+)/,1])
+          @page_size = [2, page_size.to_i].max
+          @offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@page_size}")}"
+        else
+          raise ClauseException.new("Invalid paginate clause '#{paginate}'.")
+        end  
+      end
+      
+      # Used by paginate
+      def process_param(param)
+        param
       end
       
       def process_asc(field)
@@ -254,7 +306,7 @@ module NewQueryBuilder
 
         group = @group
         if !group && @distinct
-          group = @tables.size > 1 ? " GROUP BY #{table}.id" : " GROUP BY id"
+          group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
         end
 
 
