@@ -82,6 +82,19 @@ module NewQueryBuilder
         end
       end
       
+      def process_clause_or(clause1, clause2)
+        process(clause1)
+        tables = @tables
+        where  = @where
+        @tables = []
+        @table_counter = {}
+        @where  = []
+        process(clause2)
+        @tables = (@tables + tables).uniq
+        @where  = ["((#{where.join(' AND ')}) OR (#{@where.join(' AND ')}))"]
+        @distinct = true
+      end
+      
       # A query can be made of many clauses:
       # [letters from friends] or [images in project]
       def process_query(args)

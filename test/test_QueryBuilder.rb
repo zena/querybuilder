@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/test_helper.rb'
 
 
 class DummyQueryBuilder < Test::Unit::TestCase
-  yamltest :files => [:basic]
+  yamltest
   
   def id;         123;  end
   def parent_id;  333;  end

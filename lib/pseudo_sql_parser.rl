@@ -235,14 +235,11 @@ class PseudoSQLParser
   end
   
   def self.pop_stack(stack, op)
-    debug_stack(stack, op)
     stack_op = stack.last.first
     while OP_PRECEDENCE[op.to_s.upcase] <= OP_PRECEDENCE[stack_op.to_s.upcase]
       stack.pop
-      debug_stack(stack, op)
       stack_op = stack.last.first
     end
-    puts "done"
   end
   
   def self.debug_stack(stack, msg = '')
