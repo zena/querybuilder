@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/test_helper.rb'
 
 
 class DummyQueryBuilder < Test::Unit::TestCase
-  yamltest
+  yamltest :files => [:basic, :filters]
   
   def id;         123;  end
   def parent_id;  333;  end
@@ -16,12 +16,12 @@ class DummyQueryBuilder < Test::Unit::TestCase
     
     case key
     when 'res'
-      NewDummyQuery.new(source).to_s
-      #(query.main_class != DummyQueryClass ? "#{query.main_class.to_s}: " : '') + if res = query.to_s
-      #  res
-      #else
-      #  query.errors.join(", ")
-      #end
+      query = DummyProcessor.new(source).query
+      (query.main_class != DummyClass ? "#{query.main_class}: " : '') + if res = query.to_s
+        res
+      else
+        query.errors.join(", ")
+      end
     when 'sxp'
       # s-expression
       PseudoSQLParser.parse(source).inspect

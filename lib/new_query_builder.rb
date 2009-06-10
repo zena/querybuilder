@@ -1,17 +1,15 @@
-require 'rubygems'
-require 'ruby-debug'
-Debugger.start
+require 'query'
 
 module NewQueryBuilder
   class ClauseException < Exception
   end
-  
-  class Query
-    attr_reader :context
+
+  class Processor
+    attr_reader :context, :query, :sxp, :ancestor
     
     class << self
       # class variable
-      attr_accessor :main_table
+      attr_accessor :main_table, :main_class
     end
     
     VERSION = '1.0.0'
@@ -37,70 +35,59 @@ module NewQueryBuilder
     }
     
     def initialize(source)
-      @sxp = PseudoSQLParser.parse(source)
-      @context = {:last => true}
-      @tables = []
-      @table_counter = {}
-      @join_tables   = {}
-      @select  = []
-      @where   = []
-      @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
+      if source.kind_of?(Processor)
+        @context  = source.context
+        @query    = source.query
+        @sxp      = source.sxp
+        @ancestor = source
+      else
+        @sxp = PseudoSQLParser.parse(source)
+        @context = {:last => true}
+        @query = Query.new(self.class)
+        @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
+      end
     end
     
-    # Convert query object to a string. This string should then be evaluated.
-    #
-    # ==== Parameters
-    # type<Symbol>:: Type of query to build (:find or :count).
-    #
-    # ==== Returns
-    # NilClass:: If the query is not valid and "ignore_warnings" was not set to true during initialize.
-    # String::   A string representing the query with its bind parameters.
-    #
-    # ==== Examples
-    # query.to_s
-    # => "[\"SELECT objects.* FROM objects WHERE objects.project_id = ?\", project_id]"
-    #
-    # DummyQuery.new("nodes in site").to_s
-    # => "\"SELECT objects.* FROM objects\""
-    #
-    # query.to_s(:count)
-    # => "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
-    def to_s(type = :find)
-      return "\"SELECT #{main_table}.* FROM #{main_table} WHERE 0\"" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
-      statement, bind_values = build_statement(type)
-      bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
-    end
-
     protected
+      def this
+        @this || self
+      end
+      
+      def this=(processor)
+        @this = processor
+      end
+      
       def process(sxp)
         return sxp if sxp.kind_of?(String)
         method = "process_#{OPERATOR_TO_METHOD[sxp.first] || sxp.first}"
-        if respond_to?(method)
-          self.send(method, *sxp[1..-1])
+        if this.respond_to?(method)
+          this.send(method, *sxp[1..-1])
         else
-          process_op(sxp.first, *sxp[1..-1])
+          this.process_op(sxp.first, *sxp[1..-1])
         end
       end
       
       def process_clause_or(clause1, clause2)
-        process(clause1)
-        tables = @tables
-        where  = @where
-        @tables = []
-        @table_counter = {}
-        @where  = []
-        process(clause2)
-        @tables = (@tables + tables).uniq
-        @where  = ["((#{where.join(' AND ')}) OR (#{@where.join(' AND ')}))"]
-        @distinct = true
+        this.process(clause2)
+        query2 = @query
+        @query = Query.new(this.class)
+        this.process(clause1)
+        
+        @query.tables = (@query.tables + query2.tables).uniq
+        @query.where  = ["((#{@query.where.join(' AND ')}) OR (#{query2.where.join(' AND ')}))"]
+        @query.distinct = true
       end
       
       # A query can be made of many clauses:
       # [letters from friends] or [images in project]
       def process_query(args)
-        process(args)
-        default_order_clause unless @order
-        @select << "#{main_table}.*"
+        this.process(args)
+        if @query.order.nil? && this.default_order_clause
+          sxp = PseudoSQLParser.parse("foo order by #{this.default_order_clause}")
+          order = sxp[1]
+          order[1] = [:void] # replace [:relation, "foo"] by [:void]
+          this.process(order)
+        end
       end
       
       # Parse sub-query from right to left
@@ -108,40 +95,44 @@ module NewQueryBuilder
         @distinct = true
         if query.first == :scope
           scope = query.last
-          with(:last => false, :scope => scope) do
-            process(query[1])
+          this.with(:last => false, :scope => scope) do
+            this.process(query[1])
           end
           table_alias = table
           where = @where
           @where = []
-          process(sub_query)
+          restoring_this do
+            this.process(sub_query)
+          end
           sub_where = @where
           @where = where
-          apply_scope(scope, table_alias)
+          this.apply_scope(scope, table_alias)
           @where += sub_where
         else
-          with(:last => false) do
-            process(query)
+          this.with(:last => false) do
+            this.process(query)
           end
-          process(sub_query)
+          restoring_this do
+            this.process(sub_query)
+          end
         end
       end
       
       def process_scoped_relation(relation)
         if context[:scope]
-          process_relation(relation)
+          this.process_relation(relation)
         else
-          with(:scope => nil) do
-            process_relation(relation)
-            apply_scope(context[:scope]) if context[:scope]
+          this.with(:scope => nil) do
+            this.process_relation(relation)
+            this.apply_scope(context[:scope]) if context[:scope]
           end
         end
       end
       
       def process_scope(relation, scope)
-        with(:scope => scope) do
-          process(relation)
-          apply_scope(scope)
+        this.with(:scope => scope) do
+          this.process(relation)
+          this.apply_scope(scope)
         end
       end
       
@@ -153,7 +144,7 @@ module NewQueryBuilder
           right_alias = nil
         end
         if fields = scope_fields(scope, right_alias.nil?)
-          @where << "#{field_or_attr(fields[0], left_alias)} = #{field_or_attr(fields[1], right_alias)}" if fields != []
+          @query.add_filter("#{field_or_attr(fields[0], left_alias)} = #{field_or_attr(fields[1], right_alias)}") if fields != []
         else
           raise ClauseException.new("Invalid scope '#{scope}'.")
         end
@@ -161,11 +152,11 @@ module NewQueryBuilder
       
       def field_or_attr(fld_name, table_alias = table)
         if table_alias
-          with(:table_alias => table_alias) do
-            process_field(fld_name)
+          this.with(:table_alias => table_alias) do
+            this.process_field(fld_name)
           end
         else
-          process_attr(fld_name)
+          this.process_attr(fld_name)
         end
       end
       
@@ -195,32 +186,36 @@ module NewQueryBuilder
       def process_order(*args)
         variables = args
         process(variables.shift)  # parse query
-        @order = " ORDER BY #{variables.map {|var| process(var)}.join(', ')}"
+        @query.order = " ORDER BY #{variables.map {|var| process(var)}.join(', ')}"
+      end
+      
+      def process_void(*args)
+        # do nothing
       end
       
       def process_limit(*args)
         variables = args
         process(variables.shift)  # parse query
         if variables.size == 1
-          @limit  = " LIMIT #{process(variables.first)}"
+          @query.limit  = " LIMIT #{process(variables.first)}"
         else  
-          @limit  = " LIMIT #{process(variables.last)}"
-          @offset = " OFFSET #{process(variables.first)}"
+          @query.limit  = " LIMIT #{process(variables.last)}"
+          @query.offset = " OFFSET #{process(variables.first)}"
         end
       end
       
       def process_offset(query, offset)
         process(query)
-        @offset = " OFFSET #{process(offset)}"
+        @query.offset = " OFFSET #{process(offset)}"
       end
       
       def process_paginate(query, paginate_fld)
         process(query)
-        raise ClauseException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @limit
+        raise ClauseException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
         fld = process(paginate_fld)
-        if fld && (page_size = @limit[/ LIMIT (\d+)/,1])
-          @page_size = [2, page_size.to_i].max
-          @offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@page_size}")}"
+        if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])
+          @query.page_size = [2, page_size.to_i].max
+          @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
         else
           raise ClauseException.new("Invalid paginate clause '#{paginate}'.")
         end  
@@ -244,47 +239,9 @@ module NewQueryBuilder
       end
       
       def default_order_clause
+        nil
       end
-    
-    private
-      def main_table
-        self.class.main_table
-      end
-
-      def table_counter(table_name)
-        @table_counter[table_name] || 0
-      end
-
-      def table_at(table_name, index)
-        if index < 0
-          return nil # no table at this address
-        end
-        index == 0 ? table_name : "#{table_name[0..1]}#{index}"
-      end
-
-      def table(table_name = nil, index = 0)
-        if table_name.nil?
-          context[:table_alias] || table_at(main_table, table_counter(main_table) + index)
-        else
-          table_at(table_name, table_counter(table_name) + index)
-        end
-      end
-
-      def add_table(use_name, table_name = nil)
-        table_name ||= use_name
-        if !@table_counter[use_name]
-          @table_counter[use_name] = 0
-          if use_name != table_name
-            @tables << "#{table_name} as #{use_name}"
-          else
-            @tables << table_name
-          end
-        else  
-          @table_counter[use_name] += 1
-          @tables << "#{table_name} AS #{table(use_name)}"
-        end
-      end
-
+      
       def with(hash)
         context_bak = @context
         res = ''
@@ -293,61 +250,54 @@ module NewQueryBuilder
         @context = context_bak
         res
       end
-
-      def build_statement(type = :find)
-        statement = type == :find ? find_statement : count_statement
-
-        # get bind variables
-        bind_values = []
-        statement.gsub!(/\[\[(.*?)\]\]/) do
-          bind_values << $1
-          '?'
+      
+      def restoring_this
+        processor = self.this
+        yield
+        if processor != self.this
+          # changed class, we need to change back
+          change_processor(processor)
         end
-        [statement, bind_values]
       end
-
-      def find_statement
-        table_list = []
-        @tables.each do |t|
-          table_name = t.split(/\s+/).last # objects AS ob1
-          if joins = @join_tables[table_name]
-            table_list << "#{t} #{joins.join(' ')}"
-          else
-            table_list << t
-          end
-        end
-
-        group = @group
-        if !group && @distinct
-          group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
-        end
-
-
-        "SELECT #{@select.join(',')} FROM #{table_list.flatten.join(',')}" + (@where == [] ? '' : " WHERE #{@where.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
-      end
-
-      def count_statement
-        table_list = []
-        @tables.each do |t|
-          table_name = t.split(/\s+/).last # objects AS ob1
-          if joins = @join_tables[table_name]
-            table_list << "#{t} #{joins.join(' ')}"
-          else
-            table_list << t
-          end
-        end
-
-        if @group =~ /GROUP\s+BY\s+(.+)/
-          # we need to COALESCE in order to count groups where $1 is NULL.
-          fields = $1.split(",").map{|f| "COALESCE(#{f.strip},0)"}.join(",")
-          count_on = "COUNT(DISTINCT #{fields})"
-        elsif @distinct
-          count_on = "COUNT(DISTINCT #{table}.id)"
+      
+      def change_processor(processor)
+        if @this
+          @this.change_processor(processor)
         else
-          count_on = "COUNT(*)"
+          if processor.kind_of?(Processor)
+          elsif processor.kind_of?(String)
+            processor = Module.const_get(processor).new(this)
+          else
+            processor = processor.new(this)
+          end
+          @query.processor_class = processor.class
+          update_processor(processor)
         end
-
-        "SELECT #{count_on} FROM #{table_list.flatten.join(',')}" + (@where == [] ? '' : " WHERE #{@where.join(' AND ')}")
       end
+      
+      def update_processor(processor)
+        @this = processor
+        if @ancestor
+          @ancestor.update_processor(processor)
+        end
+      end
+      
+    private
+      def table(table_name = nil, index = 0)
+        if table_name.nil?
+          context[:table_alias] || @query.table_at(@query.main_table, @query.table_counter(@query.main_table) + index)
+        else
+          @query.table_at(table_name, @query.table_counter(table_name) + index)
+        end
+      end
+
+      def add_table(use_name, table_name = nil)
+        @query.add_table(use_name, table_name)
+      end
+
+      def main_table
+        @query.main_table
+      end
+
   end
 end

@@ -1,6 +1,6 @@
 class DummyQuery < QueryBuilder
   set_main_table 'objects'
-  set_main_class 'DummyQueryClass'
+  set_main_class 'DummyClass'
   
   load_custom_queries File.join(File.dirname(__FILE__), '*')
   
@@ -108,7 +108,7 @@ class DummyQuery < QueryBuilder
     end
 end
 
-class DummyQueryClass
+class DummyClass
   def self.connection; self; end
   def self.quote(obj); "[[#{obj}]]"; end
 end
