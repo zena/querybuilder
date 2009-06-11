@@ -1,6 +1,6 @@
 module NewQueryBuilder  
   class Query
-    attr_accessor :processor_class, :distinct, :select, :tables, :where, :limit, :offset, :page_size, :order, :group
+    attr_accessor :processor_class, :distinct, :select, :tables, :where, :limit, :offset, :page_size, :order, :group, :error
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []
@@ -42,7 +42,6 @@ module NewQueryBuilder
     # query.to_s(:count)
     # => "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
     def to_s(type = :find)
-      return "\"SELECT #{main_table}.* FROM #{main_table} WHERE 0\"" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
       statement, bind_values = build_statement(type)
       bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
     end

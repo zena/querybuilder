@@ -1,9 +1,6 @@
 require 'query'
 
 module NewQueryBuilder
-  class ClauseException < Exception
-  end
-
   class Processor
     attr_reader :context, :query, :sxp, :ancestor
     
@@ -17,33 +14,28 @@ module NewQueryBuilder
       :"!" => :not,
       :"@-" => :change_sign, :"@~" => :invert_bits,
       :"^" => :bitwise_xor,
-      :* => :times, :/ => :division, :DIV => :integer_division, :% => :modulo, :MOD => :modulo,
+      :* => :times, :/ => :division, :DIV => :integer_division, :% => :modulo, :mod => :modulo,
       :- => :minus, :+ => :addition,
       :<< => :left_shift, :>> => :right_shift,
       :& => :bitwise_and,
       :| => :bitwise_or,
       :"=" => :equal, :"<=>" => :null_safe_equal, :>= => :greater_or_equal,
       :> => :greater, :<= => :smaller_or_equal, :< => :smaller, :"<>" => :not_equal, :"!=" => :not_equal,
-      :IS => :is, :LIKE => :like, :REGEXP => :regexp, :IN => :in,
-      :BETWEEN => :between, :CASE => :case, :WHEN => :when, :THEN => :then, :ELSE => :else,
-      :NOT => :not,
-      :"&&" => :and, :AND => :and,
-      :XOR => :xor,
-      :"||" => :or, :OR => :or,
+      :"&&" => :and,
+      :"||" => :or,
       :":=" => :assign,
-      :INTERVAL => :interval,
       :relation => :scoped_relation
     }
     
-    def initialize(source)
+    def initialize(source, opts = {})
       if source.kind_of?(Processor)
         @context  = source.context
         @query    = source.query
         @sxp      = source.sxp
         @ancestor = source
       else
-        @sxp = PseudoSQLParser.parse(source)
-        @context = {:last => true}
+        @sxp = Parser.parse(source)
+        @context = opts.merge({:last => true})
         @query = Query.new(self.class)
         @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
       end
@@ -66,7 +58,7 @@ module NewQueryBuilder
         elsif sxp.size == 3
           this.process_op(*sxp)
         else
-          raise Exception.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
+          raise QueryException.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
         end
       end
       
@@ -86,7 +78,7 @@ module NewQueryBuilder
       def process_query(args)
         this.process(args)
         if @query.order.nil? && this.default_order_clause
-          sxp = PseudoSQLParser.parse("foo order by #{this.default_order_clause}")
+          sxp = Parser.parse("foo order by #{this.default_order_clause}")
           order = sxp[1]
           order[1] = [:void] # replace [:relation, "foo"] by [:void]
           this.process(order)
@@ -149,7 +141,7 @@ module NewQueryBuilder
         if fields = scope_fields(scope, right_alias.nil?)
           @query.add_filter("#{field_or_attr(fields[0], left_alias)} = #{field_or_attr(fields[1], right_alias)}") if fields != []
         else
-          raise ClauseException.new("Invalid scope '#{scope}'.")
+          raise QueryException.new("Invalid scope '#{scope}'.")
         end
       end
       
@@ -164,7 +156,7 @@ module NewQueryBuilder
       end
       
       def process_field(fld_name)
-        raise ClauseException.new("Unknown field '#{fld_name}'.")
+        raise QueryException.new("Unknown field '#{fld_name}'.")
       end
       
       def process_integer(value)
@@ -178,6 +170,14 @@ module NewQueryBuilder
       def process_filter(relation, filter)
         process(relation)
         @query.add_filter process(filter)
+      end
+      
+      def process_par(content)
+        content.first == :or ? process(content) : "(#{process(content)})"
+      end
+      
+      def process_clause_par(content)
+        process(content)
       end
       
       def process_string(string)
@@ -194,7 +194,7 @@ module NewQueryBuilder
       end
       
       def process_relation(relation)
-        raise ClauseException.new("Unknown relation '#{relation}'.")
+        raise QueryException.new("Unknown relation '#{relation}'.")
       end
       
       def process_op(op, left, right)
@@ -238,18 +238,19 @@ module NewQueryBuilder
       
       def process_offset(query, offset)
         process(query)
+        raise QueryException.new("Invalid offset (used without limit).") unless @query.limit
         @query.offset = " OFFSET #{process(offset)}"
       end
       
       def process_paginate(query, paginate_fld)
         process(query)
-        raise ClauseException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
+        raise QueryException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
         fld = process(paginate_fld)
         if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])
           @query.page_size = [2, page_size.to_i].max
           @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
         else
-          raise ClauseException.new("Invalid paginate clause '#{paginate}'.")
+          raise QueryException.new("Invalid paginate clause '#{paginate}'.")
         end  
       end
       

@@ -63,9 +63,16 @@ recipients_or_objects:
   sxp: '[:query, [:clause_or, [:relation, "recipients"], [:relation, "objects"]]]'
   res: "[\"SELECT objects.* FROM objects,links WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
 
+recipients_or_objects_legacy:
+  src:
+    - 'recipients'
+    - 'objects'
+  sxp: '[:query, [:clause_or, [:clause_par, [:relation, "recipients"]], [:clause_par, [:relation, "objects"]]]]'
+  res: "[\"SELECT objects.* FROM objects,links WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
+
 or_clause_with_filter:
   src: "(recipients where name = 'foo') or objects"
-  sxp: '[:query, [:clause_or, [:filter, [:relation, "recipients"], [:"=", [:field, "name"], [:string, "foo"]]], [:relation, "objects"]]]'
+  sxp: '[:query, [:clause_or, [:clause_par, [:filter, [:relation, "recipients"], [:"=", [:field, "name"], [:string, "foo"]]]], [:relation, "objects"]]]'
 
 count_sql:
   src: "objects in project"

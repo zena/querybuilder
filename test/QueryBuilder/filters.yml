@@ -49,4 +49,4 @@ equation_and_or_par:
 equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5"
   sxp: '[:query, [:filter, [:relation, "objects"], [:and, [:par, [:or, [:>, [:integer, "1"], [:integer, "2"]], [:>, [:integer, "2"], [:integer, "3"]]]], [:"=", [:integer, "4"], [:integer, "5"]]]]]'
-#  res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND ((1 > 2 AND 2 > 3) OR 4 = 5)\", id]"
+  res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND (1 > 2 OR 2 > 3) AND 4 = 5\", id]"
