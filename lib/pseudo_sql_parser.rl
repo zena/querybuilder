@@ -54,6 +54,8 @@ class PseudoSQLParser
     "CLAUSE_OR" => 3,
     "OFFSET" => 2, "PAGINATE" => 2, "LIMIT" => 2, "ORDER" => 2, "GROUP" => 2,
     "QUERY" => 1,
+    "PAR_CLOSE" => 0,
+    "PAR" => -1,
   }
   # group < from < filter < relation < scope
 
@@ -71,6 +73,7 @@ class PseudoSQLParser
     }
     
     action integer {
+      puts str_buf.inspect
       last << [:integer, str_buf]
       str_buf = ""
     }
@@ -90,11 +93,6 @@ class PseudoSQLParser
       str_buf = ""
     }
     
-    action compare {
-      last = apply_op(stack, str_buf.to_sym)
-      str_buf = ""
-    }
-    
     action relation {
       last = insert(stack, [:relation, str_buf])
       str_buf = ""
@@ -102,6 +100,7 @@ class PseudoSQLParser
     
     action operator {
       last = apply_op(stack, str_buf.to_sym)
+      debug_stack(stack, str_buf.to_sym)
       str_buf = ""
     }
     
@@ -113,6 +112,29 @@ class PseudoSQLParser
     
     action filter {
       last = apply_op(stack, :filter)
+    }
+    
+    action goto_par {
+      # remember current machine state 'cs'
+      last << [:par, cs]
+      stack.push last.last
+        debug_stack(stack, cs)
+      last = last.last
+      fgoto par;
+      debug_stack(stack, cs)
+    }
+    
+    action par_close {
+      debug_stack(stack, 'closing')
+      pop_stack(stack, :par_close)
+      # reset machine state 'cs'
+      cs = stack.last.delete_at(1)
+      # one more time to remove [:par...] line
+      stack.pop 
+      last = stack.last
+      debug_stack(stack, 'done')
+      # closing ')' must be parsed twice
+      fhold;
     }
     
     action scope {
@@ -136,11 +158,12 @@ class PseudoSQLParser
     
     action limit {
       last = apply_op(stack, :limit)
+      str_buf = ""
     }
     
     action order {
       last = apply_op(stack, :order)
-      str_buf = ""  # because 'or_clause' is matched (short ambiguity during parsing)
+      str_buf = ""
     }
     
     action group {
@@ -177,13 +200,15 @@ class PseudoSQLParser
     real     = ws* ('-'? ('0'..'9' digit* '.' digit+) ) $str_a %real;
     integer  = ws* ('-'? ('0'..'9' digit*) ) $str_a %integer;
     number   = (real | integer);
-    operator = ws* ('+' | '-') $str_a %operator;
-    value_e  = (var %field | string | number);
-    interval = ws* ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') %interval;
-    value    = value_e (operator value_e interval?)*;
-    compare  = (ws* ('<' | '<=' | '=' | '>=' | '>') $str_a | ws+ 'like' $str_a ws+) %compare;
+    op       = ws* ('+' | '-' | '<' | '<=' | '=' | '>=' | '>') $str_a;
+    text_op  = ws+ ('or' $str_a | 'and' $str_a | ('not' $str_a %operator ws+)? 'like' $str_a ) ws+;
+    operator = (op | text_op) %operator;
+    interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a 's'? %interval;
+    value    = ((var %field | string | number) interval? | ws* '(' >goto_par ws* ')');
+    expr     = value (operator value)*;
+    par     := expr ws* ')' $par_close;
+    
     relation = ws* var %relation;
-    expr     = (value compare value);
     filter   = expr;
     filters  = ws+ 'where' %filter ws filter;
     scope    = ws+ 'in' ws var %scope;
@@ -197,7 +222,7 @@ class PseudoSQLParser
     
     part     = (relation filters? scope?);
     clause   = (part (ws+ 'from' %from_ part)*);
-    main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* limit? offset? paginate? order? group? '\n' $err(error);
+    main    := clause (ws+ ('lor' | 'land') $str_a %join_clause ws clause)* limit? offset? paginate? order? group? '\n' $err(error);
   }%%
 
   %% write data;
@@ -210,6 +235,7 @@ class PseudoSQLParser
     eof = 0;
     %% write init;
     %% write exec;
+    puts data[p..-1].inspect
     stack.first
   end
   
@@ -236,9 +262,11 @@ class PseudoSQLParser
   
   def self.pop_stack(stack, op)
     stack_op = stack.last.first
+      puts [op, stack_op].inspect
     while OP_PRECEDENCE[op.to_s.upcase] <= OP_PRECEDENCE[stack_op.to_s.upcase]
       stack.pop
       stack_op = stack.last.first
+        puts [op, stack_op].inspect
     end
   end
   

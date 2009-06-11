@@ -31,6 +31,8 @@ class DummyProcessor < NewQueryBuilder::Processor
   def process_field(fld_name)
     if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a'].include?(fld_name)
       "#{table}.#{fld_name}"
+    elsif fld_name == 'REF_DATE'
+      context[:ref_date] ? insert_bind(context[:ref_date]) : 'now()'
     else
       super # raises an error
     end

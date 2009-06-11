@@ -1,6 +1,6 @@
 module NewQueryBuilder  
   class Query
-    attr_accessor :processor_class, :tables, :where, :distinct, :select, :order, :limit, :offset, :page_size
+    attr_accessor :processor_class, :distinct, :select, :tables, :where, :limit, :offset, :page_size, :order, :group
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []

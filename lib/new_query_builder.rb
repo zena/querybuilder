@@ -31,6 +31,7 @@ module NewQueryBuilder
       :XOR => :xor,
       :"||" => :or, :OR => :or,
       :":=" => :assign,
+      :INTERVAL => :interval,
       :relation => :scoped_relation
     }
     
@@ -62,8 +63,10 @@ module NewQueryBuilder
         method = "process_#{OPERATOR_TO_METHOD[sxp.first] || sxp.first}"
         if this.respond_to?(method)
           this.send(method, *sxp[1..-1])
+        elsif sxp.size == 3
+          this.process_op(*sxp)
         else
-          this.process_op(sxp.first, *sxp[1..-1])
+          raise Exception.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
         end
       end
       
@@ -173,6 +176,21 @@ module NewQueryBuilder
       end
       
       def process_filter(relation, filter)
+        process(relation)
+        @query.add_filter process(filter)
+      end
+      
+      def process_string(string)
+        insert_bind(string.inspect)
+      end
+      
+      def process_interval(value, interval)
+        "INTERVAL #{this.process(value)} #{interval.upcase}"
+      end
+      
+      def process_or(left, right)
+        left_clause = left.first
+        "(#{this.process(left)} OR #{this.process(right)})"
       end
       
       def process_relation(relation)
@@ -180,13 +198,27 @@ module NewQueryBuilder
       end
       
       def process_op(op, left, right)
-        "#{process(left)} #{op} #{process(right)}"
+        "#{process(left)} #{op.to_s.upcase} #{process(right)}"
+      end
+      
+      def process_not(expr)
+        if expr.first == :like
+          "#{this.process(expr[1])} NOT LIKE #{this.process(expr[2])}"
+        else
+          "NOT #{this.process(expr)}"
+        end
       end
       
       def process_order(*args)
         variables = args
         process(variables.shift)  # parse query
         @query.order = " ORDER BY #{variables.map {|var| process(var)}.join(', ')}"
+      end
+      
+      def process_group(*args)
+        variables = args
+        process(variables.shift)  # parse query
+        @query.group = " GROUP BY #{variables.map {|var| process(var)}.join(', ')}"
       end
       
       def process_void(*args)
