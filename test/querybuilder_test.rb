@@ -12,19 +12,19 @@ class DummyQueryBuilder < Test::Unit::TestCase
   
   def yt_parse(key, source, opts)
     opts = Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)]
-    query = DummyQuery.new(source, opts) unless key == 'sxp'
+    
+    begin
+      query = DummyProcessor.new(source).query
+    rescue QueryBuilder::QueryException => err
+      error = err.message
+    end
     
     case key
     when 'res'
-      begin
-        query = DummyProcessor.new(source).query
-        (query.main_class != DummyClass ? "#{query.main_class}: " : '') + query.to_s
-      rescue NewQueryBuilder::QueryException => err
-        err.message
-      end
+      query ? ((query.main_class != DummyClass ? "#{query.main_class}: " : '') + query.to_s) : error
     when 'sxp'
       # s-expression
-      NewQueryBuilder::Parser.parse(source).inspect
+      QueryBuilder::Parser.parse(source).inspect
     when 'sql'
       query.sql(binding)
     when 'count'
@@ -32,7 +32,7 @@ class DummyQueryBuilder < Test::Unit::TestCase
     when 'count_sql'
       query.sql(binding, :count)
     else
-      "parse not implemented for '#{key}' in query_builder_test.rb"
+      "parse not implemented for '#{key}' in querybuilder_test.rb"
     end
   end
   

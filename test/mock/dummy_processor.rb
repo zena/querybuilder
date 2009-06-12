@@ -1,4 +1,4 @@
-class DummyProcessor < NewQueryBuilder::Processor
+class DummyProcessor < QueryBuilder::Processor
   self.main_table = "objects"
   self.main_class = 'DummyClass'
 
@@ -117,4 +117,10 @@ class DummyProcessor < NewQueryBuilder::Processor
       @query.add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]} AND #{table('links')}.relation_id = #{fields[1]} AND #{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
     end
 
+end
+
+
+class DummyClass
+  def self.connection; self; end
+  def self.quote(obj); "[[#{obj}]]"; end
 end

@@ -1,4 +1,4 @@
-class UserProcessor < NewQueryBuilder::Processor
+class UserProcessor < QueryBuilder::Processor
   self.main_table = 'users'
   self.main_class = 'TestUser'
   

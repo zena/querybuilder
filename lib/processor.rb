@@ -1,6 +1,5 @@
-require 'query'
 
-module NewQueryBuilder
+module QueryBuilder
   class Processor
     attr_reader :context, :query, :sxp, :ancestor
     

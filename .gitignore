@@ -1,2 +1,6 @@
 .*
 pkg
+lib/Makefile
+lib/*.o
+lib/*.bundle
+lib/*.so

@@ -1,4 +1,4 @@
-module NewQueryBuilder  
+module QueryBuilder  
   class Query
     attr_accessor :processor_class, :distinct, :select, :tables, :where, :limit, :offset, :page_size, :order, :group, :error
     def initialize(processor_class)
