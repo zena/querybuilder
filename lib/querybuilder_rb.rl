@@ -130,6 +130,7 @@ module QueryBuilder
   
     action from_ {
       last = apply_op(stack, :from)
+      clause_state = :relation
     }
   
     action join_clause {

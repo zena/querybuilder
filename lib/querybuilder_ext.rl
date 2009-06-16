@@ -1,8 +1,8 @@
 #include <ruby.h>
-#include <stdio.h>
 
-static VALUE rb_QueryBuilder = Qnil;
-static VALUE rb_Parser = Qnil;
+static VALUE rb_QueryBuilder   = Qnil;
+static VALUE rb_Parser         = Qnil;
+static VALUE rb_QueryException = Qnil;
 
 /* symbols */
 static VALUE _query;
@@ -78,11 +78,8 @@ void Init_querybuilder_ext() {
   _downcase  = rb_intern("downcase");
   _pop_stack = rb_intern("pop_stack");
   
-  /*
-  static VALUE _string = ID2SYM(rb_intern("string"));
-  static VALUE _string = ID2SYM(rb_intern("string"));
-  static VALUE _string = ID2SYM(rb_intern("string"));
-  */
+  /* classes */
+  rb_QueryException = rb_const_get(rb_QueryBuilder, rb_intern("QueryException"));
 }
 
 /* macro */
@@ -280,6 +277,7 @@ void Init_querybuilder_ext() {
     APPLY_OP(_from);
     // str_buf = ""
     str_a = NULL;
+    clause_state = CLAUSE_RELATION;
   }
 
   action join_clause {
@@ -308,8 +306,8 @@ void Init_querybuilder_ext() {
   action error {
     p = p - 3;
     if (p < data) p = data;
-    // TODO: raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.")
-    rb_raise(rb_eSyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p))));
+    // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.")
+    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
 
   action debug {
@@ -337,10 +335,10 @@ VALUE rb_parse(VALUE self, VALUE arg) {
     // data = "#{arg}\n"
     tmp = rb_str_plus(arg, rb_str_new2("\n"));
   } else {
-    rb_raise(rb_eSyntaxError, "Bad element type: Parser only accepts strings.");
+    rb_raise(rb_QueryException, "Bad element type: Parser only accepts strings.");
   }
   const char * data = RSTRING_PTR(tmp);
-  printf("data ==%s==\n", data);
+  
   int cs;
   const char * p     = data;
   const char * pe    = data + RSTRING_LEN(tmp);
@@ -361,11 +359,11 @@ VALUE rb_parse(VALUE self, VALUE arg) {
   %% write init;
   %% write exec;
   
-  // TODO: raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
+  // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
   if (p < pe) {
     p = p - 3;
     if (p < data) p = data;
-    rb_raise(rb_eSyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p))));
+    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
   
   return rb_ary_entry(stack, 0);

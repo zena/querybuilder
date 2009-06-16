@@ -10,14 +10,14 @@ class DummyProcessor < QueryBuilder::Processor
   # For example:
   #                          current         previous
   #  ['parent_id', 'id'] ==> no1.parent_id = nodes.id
-  def scope_fields(scope, is_last = false)
+  def scope_fields(scope)
     case scope
     when 'self'
       ['parent_id', 'id']
     when 'parent'
-      is_last ? ['parent_id', 'parent_id'] : ['parent_id', 'id']
+      last? ? ['parent_id', 'parent_id'] : ['parent_id', 'id']
     when 'project'
-      is_last ? ['project_id', 'project_id'] : ['project_id', 'id']
+      last? ? ['project_id', 'project_id'] : ['project_id', 'id']
     when 'site', main_table
       # not an error, but do not scope
       []
@@ -37,10 +37,18 @@ class DummyProcessor < QueryBuilder::Processor
       super # raises an error
     end
   end
-
-  def process_relation(relation)
-    unless class_relation(relation) || context_relation(relation) || direct_filter(relation) || join_relation(relation)
-      super # raise an error
+  
+  def process_equal(left, right)
+    if left == [:field, 'class'] && right[0] == :string
+      case right.last
+      when 'Client'
+        kpath = 'NRCC'
+      else
+        raise QueryBuilder::QueryException.new("Unknown class #{right.last.inspect}.")
+      end
+      "#{field_or_attr('kpath')} LIKE #{insert_bind((kpath + '%').inspect)}"
+    else
+      super
     end
   end
 
@@ -50,7 +58,7 @@ class DummyProcessor < QueryBuilder::Processor
       when 'users'  
         add_table('users')
         add_table(main_table)
-        @query.add_filter "#{table('users')}.node_id = #{field_or_attr('id')}"
+        add_filter "#{table('users')}.node_id = #{field_or_attr('id')}"
         this.apply_scope(default_scope) if context[:last]
         change_processor 'UserProcessor'
         return true
@@ -58,7 +66,8 @@ class DummyProcessor < QueryBuilder::Processor
         return nil
       end
     end  
-
+    
+    # Moving to another context without a join table
     def context_relation(relation)
       case relation
       when 'self'
@@ -67,35 +76,30 @@ class DummyProcessor < QueryBuilder::Processor
         fields = ['id', 'parent_id']
       when 'project'
         fields = ['id', 'project_id']
-      when main_table, 'children'
-        context[:scope] ||= default_scope
-        add_table(main_table)
-        return true # dummy clause: does nothing
       else
-        return false
+        return nil
       end
-    
+      
       add_table(main_table)
-      @query.add_filter "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table,-1))}"
+      add_filter "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}"
     end
 
-    # Direct filter
-    def direct_filter(relation)
+    # Filtering of objects in scope
+    def filter_relation(relation)
       case relation
       when 'letters'
-        context[:scope] ||= default_scope
         add_table(main_table)
-        @query.add_filter "#{table}.kpath LIKE 'NNL%'"
+        add_filter "#{table}.kpath LIKE #{insert_bind("NNL%".inspect)}"
       when 'clients'
-        context[:scope] ||= default_scope
         add_table(main_table)
-        @query.add_filter "#{table}.kpath LIKE 'NRCC%'"
-      else
-        return false
+        add_filter "#{table}.kpath LIKE #{insert_bind("NRCC%".inspect)}"
+      when main_table, 'children'
+        # no filter
+        add_table(main_table)
       end
     end
 
-    # Filters that need a join
+    # Moving to another context through 'joins'
     def join_relation(relation)
       case relation
       when 'recipients'
@@ -110,11 +114,11 @@ class DummyProcessor < QueryBuilder::Processor
       else
         return false
       end
-    
+      
       add_table(main_table)
       add_table('links')
       # source --> target
-      @query.add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]} AND #{table('links')}.relation_id = #{fields[1]} AND #{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
+      add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]} AND #{table('links')}.relation_id = #{fields[1]} AND #{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
     end
 
 end

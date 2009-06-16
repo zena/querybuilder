@@ -1,11 +1,12 @@
 module QueryBuilder  
   class Query
-    attr_accessor :processor_class, :distinct, :select, :tables, :where, :limit, :offset, :page_size, :order, :group, :error
+    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where, :limit, :offset, :page_size, :order, :group, :error
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []
-      @table_counter = {}
+      @table_alias = {}
       @join_tables   = {}
+      @needed_join_tables = {}
       @select  = []
       @where   = []
     end
@@ -46,34 +47,74 @@ module QueryBuilder
       bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
     end
     
-    def table_counter(table_name)
-      @table_counter[table_name] || 0
+    # Convert the query object into an SQL query.
+    #
+    # ==== Parameters
+    # bindings<Binding>:: Binding context in which to evaluate bind clauses (query arguments).
+    # type<Symbol>::      Type of SQL query (:find or :count)
+    #
+    # ==== Returns
+    # NilClass:: If the query is not valid and "ignore_warnings" was not set to true during initialize.
+    # String::   An SQL query, ready for execution (no more bind variables).
+    #
+    # ==== Examples
+    # query.sql(binding)
+    # => "SELECT objects.* FROM objects WHERE objects.project_id = 12489"
+    #
+    # query.sql(bindings, :count)
+    # => "SELECT COUNT(*) FROM objects WHERE objects.project_id = 12489"
+    def sql(bindings, type = :find)
+      statement, bind_values = build_statement(type)
+      connection = get_connection(bindings)
+      statement.gsub('?') { eval_bound_value(bind_values.shift, connection, bindings) }
     end
 
-    def table_at(table_name, index)
-      if index < 0
-        return nil # no table at this address
-      end
-      index == 0 ? table_name : "#{table_name[0..1]}#{index}"
-    end
-
-    def add_table(use_name, table_name = nil)
+    def add_table(use_name, table_name = nil, avoid_alias = true)
       table_name ||= use_name
-      if !@table_counter[use_name]
-        @table_counter[use_name] = 0
-        if use_name != table_name
-          @tables << "#{table_name} as #{use_name}"
-        else
-          @tables << table_name
-        end
-      else  
-        @table_counter[use_name] += 1
-        @tables << "#{table_name} AS #{table(use_name)}"
+      @table_alias[use_name] ||= []
+      if avoid_alias && !@tables.include?(use_name)
+        alias_name = use_name
+      elsif @tables.include?(use_name)
+        # links, li1, li2, li3
+        alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size}"
+      else
+        # ob1, obj2, objects
+        alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
+      end
+      
+      @table_alias[use_name] << alias_name
+      if alias_name != table_name
+        @tables << "#{table_name} AS #{alias_name}"
+      else
+        @tables << table_name
       end
     end
     
     def table(table_name = main_table, index = 0)
-      table_at(table_name, table_counter(table_name) + index)
+      @table_alias[table_name][index - 1]
+    end
+    
+    # versions LEFT JOIN dyn_attributes ON ...
+    # FIXME !
+    def needs_join_table(table1, type, table2, clause, join_name = nil)
+      join_name ||= "#{table1}=#{type}=#{table2}"
+      @needed_join_tables[join_name] ||= {}
+      @needed_join_tables[join_name][table] ||= begin
+        # define join for this part ('table' = unique for each part)
+        
+        first_table = table(table1)
+        
+        if !@table_counter[table2]
+          @table_counter[table2] = 0
+          second_table  = table2
+        else
+          @table_counter[table2] += 1
+          second_table  = "#{table2} AS #{table(table2)}"
+        end
+        @join_tables[first_table] ||= []
+        @join_tables[first_table] << "#{type} JOIN #{second_table} ON #{clause.gsub('TABLE1',table(table1)).gsub('TABLE2',table(table2))}"
+        table(table2)
+      end
     end
     
     private
@@ -104,9 +145,8 @@ module QueryBuilder
         if !group && @distinct
           group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
         end
-
-
-        "SELECT #{(["#{main_table}.*"]+@select).join(',')} FROM #{table_list.flatten.join(',')}" + (@where == [] ? '' : " WHERE #{@where.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        
+        "SELECT #{(["#{main_table}.*"]+@select).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement
@@ -130,7 +170,27 @@ module QueryBuilder
           count_on = "COUNT(*)"
         end
 
-        "SELECT #{count_on} FROM #{table_list.flatten.join(',')}" + (@where == [] ? '' : " WHERE #{@where.join(' AND ')}")
+        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}")
+      end
+      
+      def get_connection(bindings)
+        eval "#{main_class}.connection", bindings
+      end
+      
+      # Adapted from Rail's ActiveRecord code. We need "eval" because
+      # QueryBuilder is a compiler and it has absolutely no knowledge
+      # of the running context.
+      def eval_bound_value(value_as_string, connection, bindings)
+        value = eval(value_as_string, bindings)
+        if value.respond_to?(:map) && !value.kind_of?(String) #!value.acts_like?(:string)
+          if value.respond_to?(:empty?) && value.empty?
+            connection.quote(nil)
+          else
+            value.map { |v| connection.quote(v) }.join(',')
+          end
+        else
+          connection.quote(value)
+        end
       end
   end
 end

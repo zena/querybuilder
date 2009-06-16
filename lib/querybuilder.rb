@@ -1,3 +1,9 @@
+module QueryBuilder
+  class QueryException < Exception
+  end
+end
+
+require File.dirname(__FILE__) + '/version'
 require File.dirname(__FILE__) + '/query'
 begin
   require File.dirname(__FILE__) + '/querybuilder_ext'

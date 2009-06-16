@@ -3,27 +3,35 @@ simple:
   sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:"=", [:field, "name"], [:string, "foo"]]], "site"]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.name = ?\", \"foo\"]"
 
-recipients_that_are_clients:
+recipients_where_kpath:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? AND objects.kpath LIKE ?\", id, \"NRCC%\"]"
+  res: "[\"SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", \"NRCC%\", id]"
+
+hand_made_class_filter:
+  src: "recipients where kpath like 'NRCC%'"
+  res: "[\"SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", \"NRCC%\", id]"
+  
+better_class_filter:
+  src: "recipients where class = 'Client'"
+  res: "[\"SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", \"NRCC%\", id]"
 
 like_filter_with_scope:
   src: "letters where name like 'a%' in site"
   sxp: '[:query, [:scope, [:filter, [:relation, "letters"], [:like, [:field, "name"], [:string, "a%"]]], "site"]]'
-  res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.name LIKE ?\", \"a%\"]"
+  res: '["SELECT objects.* FROM objects WHERE objects.name LIKE ? AND objects.kpath LIKE ?", "a%", "NNL%"]'
 
 pages_in_site_name_not_like:
   src: "letters where name not like 'a%' in site"
   sxp: '[:query, [:scope, [:filter, [:relation, "letters"], [:not, [:like, [:field, "name"], [:string, "a%"]]]], "site"]]'
-  res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.name NOT LIKE ?\", \"a%\"]"
+  res: '["SELECT objects.* FROM objects WHERE objects.name NOT LIKE ? AND objects.kpath LIKE ?", "a%", "NNL%"]'
 
 letters_group_by_name:
   sxp: '[:query, [:group, [:relation, "letters"], [:field, "name"]]]'
-  res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ? GROUP BY objects.name\", id]"
+  res: '["SELECT objects.* FROM objects WHERE objects.kpath LIKE ? AND objects.parent_id = ? GROUP BY objects.name", "NNL%", id]'
 
 recipients_group_by_name:
   sxp: '[:query, [:group, [:relation, "recipients"], [:field, "name"]]]'
-  res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.name\", id]"
+  res: "[\"SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.name\", id]"
 
 custom_query_having:
   context:
@@ -34,17 +42,17 @@ custom_query_having:
 equation_in_filter:
   src: "objects where event_at > REF_DATE + custom_a months"
   sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
-  res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND objects.event_at > now() + INTERVAL objects.custom_a MONTH\", id]"
+  res: '["SELECT objects.* FROM objects WHERE objects.event_at > now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?", id]'
 
 equation_with_date_interval:
   src: "objects where event_at > '2006-04-01' + 6 week"
   sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:string, "2006-04-01"], [:interval, [:integer, "6"], "week"]]]]]'
-  res: '["SELECT objects.* FROM objects WHERE objects.parent_id = ? AND objects.event_at > ? + INTERVAL 6 WEEK", id, "2006-04-01"]'
+  res: '["SELECT objects.* FROM objects WHERE objects.event_at > ? + INTERVAL 6 WEEK AND objects.parent_id = ?", "2006-04-01", id]'
 
 equation_and_or_par:
   src: "objects where event_at > '2006-04-01' or name like 'foo%'"
   sxp: '[:query, [:filter, [:relation, "objects"], [:or, [:>, [:field, "event_at"], [:string, "2006-04-01"]], [:like, [:field, "name"], [:string, "foo%"]]]]]'
-  res: "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ? AND (objects.event_at > ? OR objects.name LIKE ?)\", id, \"2006-04-01\", \"foo%\"]"
+  res: '["SELECT objects.* FROM objects WHERE (objects.event_at > ? OR objects.name LIKE ?) AND objects.parent_id = ?", "2006-04-01", "foo%", id]'
 
 equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5 "

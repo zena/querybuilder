@@ -10,7 +10,7 @@
   integer  = ws* ('-'? digit+ ) $str_a %integer;
   number   = (real | integer);
   op       = ws* ('+' | '-' | '<' | '<=' | '=' | '>=' | '>') $str_a;
-  text_op  = ws+ ('or' $str_a | 'and' $str_a | ('not' $str_a %operator ws+)? 'like' $str_a );
+  text_op  = ws+ ('or' $str_a | 'and' $str_a | ('not' $str_a %operator ws+)? 'like' $str_a);
   operator = (op %operator | text_op %operator ws+);
   interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a %interval 's'?;
   value    = ((var %field | string | number) interval? | ws* '(' >goto_expr_p ws* ')');

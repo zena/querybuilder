@@ -1,6 +1,4 @@
 module QueryBuilder
-  class QueryException < Exception
-  end
   class Parser
     class << self
       # http://dev.mysql.com/doc/refman/5.1/en/operator-precedence.html

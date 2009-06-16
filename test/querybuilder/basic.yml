@@ -16,12 +16,12 @@ objects_in_site:
   
 recipients:
   sxp: '[:query, [:relation, "recipients"]]'
-  res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", id]"
-  sql: "SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = [[123]]"
+  res: "[\"SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", id]"
+  sql: "SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = [[123]]"
 
 letters_in_project:
   sxp: '[:query, [:scope, [:relation, "letters"], "project"]]'
-  res: "[\"SELECT objects.* FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.project_id = ?\", project_id]"
+  res: '["SELECT objects.* FROM objects WHERE objects.kpath LIKE ? AND objects.project_id = ?", "NNL%", project_id]'
 
 parent:
   res: "[\"SELECT objects.* FROM objects WHERE objects.id = ?\", parent_id]"
@@ -33,7 +33,7 @@ order_single_table:
 
 order_many_tables:
   src: "recipients order by name"
-  res: "[\"SELECT objects.* FROM objects,links WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? ORDER BY objects.name\", id]"
+  res: "[\"SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? ORDER BY objects.name\", id]"
 
 order_many_params:
   src: "objects in project order by name, id desc"
@@ -61,14 +61,14 @@ paginate:
 
 recipients_or_objects:
   sxp: '[:query, [:clause_or, [:relation, "recipients"], [:relation, "objects"]]]'
-  res: "[\"SELECT objects.* FROM objects,links WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
+  res: "[\"SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
 
 recipients_or_objects_legacy:
   src:
     - 'recipients'
     - 'objects'
   sxp: '[:query, [:clause_or, [:clause_par, [:relation, "recipients"]], [:clause_par, [:relation, "objects"]]]]'
-  res: "[\"SELECT objects.* FROM objects,links WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
+  res: "[\"SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id\", id, id]"
 
 or_clause_with_filter:
   src: "(recipients where name = 'foo') or objects"

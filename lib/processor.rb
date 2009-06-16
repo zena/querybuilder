@@ -1,4 +1,7 @@
 
+require 'rubygems'
+require 'ruby-debug'
+Debugger.start
 module QueryBuilder
   class Processor
     attr_reader :context, :query, :sxp, :ancestor
@@ -22,8 +25,7 @@ module QueryBuilder
       :> => :greater, :<= => :smaller_or_equal, :< => :smaller, :"<>" => :not_equal, :"!=" => :not_equal,
       :"&&" => :and,
       :"||" => :or,
-      :":=" => :assign,
-      :relation => :scoped_relation
+      :":=" => :assign
     }
     
     def initialize(source, opts = {})
@@ -34,7 +36,7 @@ module QueryBuilder
         @ancestor = source
       else
         @sxp = Parser.parse(source)
-        @context = opts.merge({:last => true})
+        @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
         @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
       end
@@ -68,8 +70,12 @@ module QueryBuilder
         this.process(clause1)
         
         @query.tables = (@query.tables + query2.tables).uniq
-        @query.where  = ["((#{@query.where.join(' AND ')}) OR (#{query2.where.join(' AND ')}))"]
+        @query.where  = ["((#{@query.where.reverse.join(' AND ')}) OR (#{query2.where.reverse.join(' AND ')}))"]
         @query.distinct = true
+      end
+      
+      def process_clause_par(content)
+        process(content)
       end
       
       # A query can be made of many clauses:
@@ -86,62 +92,76 @@ module QueryBuilder
       
       # Parse sub-query from right to left
       def process_from(query, sub_query)
-        @distinct = true
-        if query.first == :scope
-          scope = query.last
-          this.with(:last => false, :scope => scope) do
-            this.process(query[1])
-          end
-          table_alias = table
-          where = @where
-          @where = []
-          restoring_this do
-            this.process(sub_query)
-          end
-          sub_where = @where
-          @where = where
-          this.apply_scope(scope, table_alias)
-          @where += sub_where
-        else
-          this.with(:last => false) do
-            this.process(query)
-          end
-          restoring_this do
-            this.process(sub_query)
-          end
+        @query.distinct = true
+        this.with(:first => false) do
+          this.process(sub_query)
+        end
+        this.with(:last  => false) do
+          this.process(query)
         end
       end
       
-      def process_scoped_relation(relation)
-        if context[:scope]
-          this.process_relation(relation)
-        else
-          this.with(:scope => nil) do
-            this.process_relation(relation)
-            this.apply_scope(context[:scope]) if context[:scope]
-          end
-        end
+      def first?
+        this.context[:first]
       end
       
+      def last?
+        this.context[:last]
+      end
+=begin
+    (3)          (2)                     (1)
+    letters from friends in project from foo
+
+    [:from,
+      [:from,
+        [:relation, "letters"],      (3)
+        [:scope,
+          [:relation, "friends"],    (2)
+          "project"
+        ]
+      ],
+      [:relation, "foo"]             (1)
+    ]
+
+    1. relation "foo"
+         scope: nil ---> nothing to do
+         where:    obj1.id = lk1.src_id AND lk1.rel_id = FOO AND lk1.trg_id = [[@node.id]]
+    2. relation "friends"
+         scope: "project"
+           where:  obj2.project_id = obj1.project_id
+         where:    obj3.id = lk2.src_id AND lk2.rel_id = FRIENDS AND lk2.trg_id = obj2.id
+    3. relation "letters"
+         scope: nil ---> parent
+           where:  objects.parent_id = obj3.id
+         where: objects.kpath like 'NNL%'
+
+    In case (1) or (2), scope should be processed before the relation. In case (3),
+    it should be processed after.
+=end      
+      def process_relation(relation)
+        if class_relation(relation)
+          # changed class
+        elsif (context[:scope_type] = :join)    && join_relation(relation)  
+        elsif (context[:scope_type] = :context) && context_relation(relation)
+        elsif (context[:scope_type] = :filter)  && filter_relation(relation)
+        else
+          raise QueryException.new("Unknown relation '#{relation}'.")
+        end
+      end
+            
       def process_scope(relation, scope)
         this.with(:scope => scope) do
           this.process(relation)
-          this.apply_scope(scope)
         end
       end
       
-      def apply_scope(scope, left_alias = nil)
-        if left_alias
-          right_alias = table
-        else
-          left_alias  = table
-          right_alias = nil
-        end
-        if fields = scope_fields(scope, right_alias.nil?)
-          @query.add_filter("#{field_or_attr(fields[0], left_alias)} = #{field_or_attr(fields[1], right_alias)}") if fields != []
+      def apply_scope(scope)
+        if fields = scope_fields(scope)
+          add_filter("#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}") if fields != []
         else
           raise QueryException.new("Invalid scope '#{scope}'.")
         end
+        true
       end
       
       def field_or_attr(fld_name, table_alias = table)
@@ -168,15 +188,11 @@ module QueryBuilder
       
       def process_filter(relation, filter)
         process(relation)
-        @query.add_filter process(filter)
+        add_filter process(filter)
       end
       
       def process_par(content)
         content.first == :or ? process(content) : "(#{process(content)})"
-      end
-      
-      def process_clause_par(content)
-        process(content)
       end
       
       def process_string(string)
@@ -190,10 +206,6 @@ module QueryBuilder
       def process_or(left, right)
         left_clause = left.first
         "(#{this.process(left)} OR #{this.process(right)})"
-      end
-      
-      def process_relation(relation)
-        raise QueryException.new("Unknown relation '#{relation}'.")
       end
       
       def process_op(op, left, right)
@@ -251,6 +263,10 @@ module QueryBuilder
         else
           raise QueryException.new("Invalid paginate clause '#{paginate}'.")
         end  
+      end
+      
+      def process_equal(left, right)
+        process_op(:"=", left, right)
       end
       
       # Used by paginate
@@ -317,19 +333,56 @@ module QueryBuilder
     private
       def table(table_name = nil, index = 0)
         if table_name.nil?
-          context[:table_alias] || @query.table_at(@query.main_table, @query.table_counter(@query.main_table) + index)
+          context[:table_alias] || @query.table(@query.main_table, index)
         else
-          @query.table_at(table_name, @query.table_counter(table_name) + index)
+          @query.table(table_name, index)
         end
       end
 
       def add_table(use_name, table_name = nil)
-        @query.add_table(use_name, table_name)
+        if use_name == main_table && first?
+          # we are now using final table
+          context[:table_alias] = use_name
+          avoid_alias = true
+        else
+          avoid_alias = false
+        end
+        
+        if use_name == main_table
+          if context[:scope_type] == :join
+            context[:scope_type] = nil
+            # pre scope
+            if context[:scope]
+              @query.add_table(main_table, main_table, avoid_alias)
+              apply_scope(context[:scope])
+            end
+            @query.add_table(use_name, table_name, avoid_alias)
+          elsif context[:scope_type] == :filter  
+            context[:scope_type] = nil
+            # post scope
+            @query.add_table(use_name, table_name, avoid_alias)
+            apply_scope(context[:scope] || default_scope)
+          else
+            # scope already applied / skip
+            @query.add_table(use_name, table_name, avoid_alias)
+          end
+        else
+          # no scope
+          # can only scope main_table
+          @query.add_table(use_name, table_name)
+        end
       end
 
       def main_table
         @query.main_table
       end
-
+      
+      def needs_join_table(*args)
+        @query.needs_join_table(*args)
+      end
+      
+      def add_filter(*args)
+        @query.add_filter(*args)
+      end
   end
 end
