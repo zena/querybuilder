@@ -2,7 +2,7 @@ groups:
   - test
   - test2
 
-DummyQuery:
+DummyProcessor:
   foo:
     select:
       - foo

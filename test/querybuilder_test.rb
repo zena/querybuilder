@@ -13,12 +13,11 @@ class DummyQueryBuilder < Test::Unit::TestCase
   def yt_parse(key, source, opts)
     opts = Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)]
     
-    
     case key
     when 'res'
       
       begin
-        query = DummyProcessor.new(source).query
+        query = DummyProcessor.new(source, opts).query
         (query.main_class != DummyClass ? "#{query.main_class}: " : '') + query.to_s
       rescue QueryBuilder::QueryException => err
         err.message
@@ -27,11 +26,11 @@ class DummyQueryBuilder < Test::Unit::TestCase
       # s-expression
       QueryBuilder::Parser.parse(source).inspect
     when 'sql'
-      DummyProcessor.new(source).query.sql(binding)
+      DummyProcessor.new(source, opts).query.sql(binding)
     when 'count'
-      DummyProcessor.new(source).query.to_s(:count)
+      DummyProcessor.new(source, opts).query.to_s(:count)
     when 'count_sql'
-      DummyProcessor.new(source).query.sql(binding, :count)
+      DummyProcessor.new(source, opts).query.sql(binding, :count)
     else
       "parse not implemented for '#{key}' in querybuilder_test.rb"
     end

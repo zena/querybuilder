@@ -1,13 +1,13 @@
 module QueryBuilder  
   class Query
-    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where, :limit, :offset, :page_size, :order, :group, :error
+    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where, :limit, :offset, :page_size, :order, :group, :error, :attributes_alias
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []
       @table_alias = {}
       @join_tables   = {}
       @needed_join_tables = {}
-      @select  = []
+      @attributes_alias   = {}
       @where   = []
     end
     
@@ -69,55 +69,89 @@ module QueryBuilder
       statement.gsub('?') { eval_bound_value(bind_values.shift, connection, bindings) }
     end
 
+    # 'avoid_alias' is used when parsing the last element so that it takes the real table name (nodes, not no1). We need
+    # this because we can use 'OR' between parts and we thus need the same table reference.
     def add_table(use_name, table_name = nil, avoid_alias = true)
-      table_name ||= use_name
-      @table_alias[use_name] ||= []
-      if avoid_alias && !@tables.include?(use_name)
-        alias_name = use_name
-      elsif @tables.include?(use_name)
-        # links, li1, li2, li3
-        alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size}"
-      else
-        # ob1, obj2, objects
-        alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
-      end
-      
-      @table_alias[use_name] << alias_name
-      if alias_name != table_name
-        @tables << "#{table_name} AS #{alias_name}"
-      else
-        @tables << table_name
-      end
+      alias_name = get_alias(use_name, table_name, avoid_alias)
+      add_alias_to_tables(table_name || use_name, alias_name)
+    end
+    
+    def add_select(clause)
+      @select ||= []
+      @select << clause
+      rebuild_attributes_hash!
     end
     
     def table(table_name = main_table, index = 0)
       @table_alias[table_name][index - 1]
     end
     
+    # Use this method to add a join to another table (added only once for each join name).
     # versions LEFT JOIN dyn_attributes ON ...
-    # FIXME !
-    def needs_join_table(table1, type, table2, clause, join_name = nil)
-      join_name ||= "#{table1}=#{type}=#{table2}"
+    def needs_join_table(table_name1, type, table_name2, clause, join_name = nil)
+      join_name ||= "#{table_name1}=#{type}=#{table_name2}"
       @needed_join_tables[join_name] ||= {}
       @needed_join_tables[join_name][table] ||= begin
         # define join for this part ('table' = unique for each part)
         
-        first_table = table(table1)
+        # don't add to list of tables, just get unique alias name
+        second_table = get_alias(table_name2)
         
-        if !@table_counter[table2]
-          @table_counter[table2] = 0
-          second_table  = table2
-        else
-          @table_counter[table2] += 1
-          second_table  = "#{table2} AS #{table(table2)}"
-        end
+        # create join
+        first_table = table(table_name1)
+        
         @join_tables[first_table] ||= []
-        @join_tables[first_table] << "#{type} JOIN #{second_table} ON #{clause.gsub('TABLE1',table(table1)).gsub('TABLE2',table(table2))}"
-        table(table2)
+        @join_tables[first_table] << "#{type} JOIN #{second_table} ON #{clause.gsub('TABLE1',first_table).gsub('TABLE2',second_table)}"
+        second_table
+      end
+    end
+    
+    # Used after setting @tables from custom query
+    def rebuild_tables!
+      @table_alias = {}
+      @tables.each do |t|
+        base, as, use_name = t.split(' ')
+        @table_alias[base] ||= []
+        @table_alias[base] << use_name
+      end
+    end
+    
+    def rebuild_attributes_hash!
+      @attributes_alias = {}
+      @select.each do |attribute|
+        if attribute =~ /\A(.+)\s+AS\s+(.+)\Z/
+          @attributes_alias[$2] = $1
+        end
       end
     end
     
     private
+      # Make sure each used table gets a unique name
+      def get_alias(use_name, table_name = nil, avoid_alias = true)
+        table_name ||= use_name
+        @table_alias[use_name] ||= []
+        if avoid_alias && !@tables.include?(use_name)
+          alias_name = use_name
+        elsif @tables.include?(use_name)
+          # links, li1, li2, li3
+          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size}"
+        else
+          # ob1, obj2, objects
+          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
+        end
+      
+        @table_alias[use_name] << alias_name
+        alias_name
+      end
+    
+      def add_alias_to_tables(table_name, alias_name)
+        if alias_name != table_name
+          @tables << "#{table_name} AS #{alias_name}"
+        else
+          @tables << table_name
+        end
+      end
+      
       def build_statement(type = :find)
         statement = type == :find ? find_statement : count_statement
 
@@ -146,7 +180,7 @@ module QueryBuilder
           group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
         end
         
-        "SELECT #{(["#{main_table}.*"]+@select).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        "SELECT #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement

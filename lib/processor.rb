@@ -8,7 +8,69 @@ module QueryBuilder
     
     class << self
       # class variable
-      attr_accessor :main_table, :main_class
+      attr_accessor :main_table, :main_class, :custom_queries
+      
+      # Load prepared SQL definitions from a set of directories. If the file does not contain "group" or "groups" keys,
+      # the filename is used as group.
+      #
+      # ==== Parameters
+      # query<String>:: Path to list of custom queries yaml files.
+      #
+      # ==== Examples
+      #   DummyQuery.load_custom_queries("/path/to/some/*/directory")
+      #
+      # The format of a custom query definition is:
+      #
+      #   groups:
+      #     - test.host
+      #   DummyQuery:      # QueryBuilder class
+      #     abc:           # query's relation name
+      #       select:      # selected fields
+      #         - 'a'
+      #         - '34 AS number'
+      #         - 'c'
+      #       tables:      # tables used
+      #         - 'test'
+      #       join_tables: # joins
+      #         test:
+      #           - LEFT JOIN other ON other.test_id = test.id
+      #       where:    # filters
+      #         - '1'
+      #         - '2'
+      #         - '3'
+      #       order:  'a DESC' # order clause
+      #
+      # Once loaded, this 'custom query' can be used in a query like:
+      #   "images from abc where a > 54"
+      def load_custom_queries(directories)
+        klass = nil
+        self.custom_queries ||= {}
+        Dir.glob(directories).each do |dir|
+          if File.directory?(dir)
+            Dir.foreach(dir) do |file|
+              next unless file =~ /(.+).yml$/
+              custom_query_groups = $1
+              definitions = YAML::load(File.read(File.join(dir,file)))
+              custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
+              definitions.each do |klass,v|
+                klass = Module.const_get(klass)
+                raise ArgumentError.new("Invalid Processor class (#{klass}). Should be a descendant of QueryBuilder::Processor.") unless klass.ancestors.include?(Processor)
+                custom_queries[klass] ||= {}
+                custom_query_groups.each do |custom_query_group|
+                  custom_queries[klass][custom_query_group] ||= {}
+                  klass_queries = custom_queries[klass][custom_query_group]
+                  v.each do |k,v|
+                    klass_queries[k] = v
+                  end
+                end
+              end
+            end
+          end
+        end
+      rescue NameError => err
+        raise ArgumentError.new("Invalid Processor class (#{klass})")
+      end
+
     end
     
     VERSION = '1.0.0'
@@ -29,11 +91,13 @@ module QueryBuilder
     }
     
     def initialize(source, opts = {})
+      @opts = opts
       if source.kind_of?(Processor)
+        # experimental: class change
         @context  = source.context
         @query    = source.query
         @sxp      = source.sxp
-        @ancestor = source
+        @ancestor = source # used during class change to return back to previous 'this'
       else
         @sxp = Parser.parse(source)
         @context = opts.merge(:first => true, :last => true)
@@ -139,7 +203,9 @@ module QueryBuilder
     it should be processed after.
 =end      
       def process_relation(relation)
-        if class_relation(relation)
+        if custom_query(relation)
+          # load custom query
+        elsif class_relation(relation)
           # changed class
         elsif (context[:scope_type] = :join)    && join_relation(relation)  
         elsif (context[:scope_type] = :context) && context_relation(relation)
@@ -175,7 +241,12 @@ module QueryBuilder
       end
       
       def process_field(fld_name)
-        raise QueryException.new("Unknown field '#{fld_name}'.")
+        if fld = @query.attributes_alias[fld_name]
+          # use custom query alias value defined in select clause: 'custom_a AS validation'
+          context == :filter ? "(#{fld})" : fld
+        else
+          raise QueryException.new("Unknown field '#{fld_name}'.")
+        end
       end
       
       def process_integer(value)
@@ -282,6 +353,19 @@ module QueryBuilder
         "#{process(field)} DESC"
       end
       
+      # ******** And maybe overwrite these **********
+      def parse_custom_query_argument(key, value)
+        return nil unless value
+        case key
+        when :order
+          " ORDER BY #{value}"
+        when :group
+          " GROUP BY #{value}"
+        else
+          value
+        end
+      end
+      
       def insert_bind(str)
         "[[#{str}]]"
       end
@@ -330,7 +414,42 @@ module QueryBuilder
         end
       end
       
+      def custom_query(relation)
+        return false unless first? && last?  # current safety net until "from" is correctly implemented and tested
+        custom_queries = self.class.custom_queries[self.class]
+        if custom_queries && 
+           custom_queries[@opts[:custom_query_group]] && 
+           custom_query = custom_queries[@opts[:custom_query_group]][relation]
+           
+          custom_query.each do |k,v|
+            @query.send(:instance_variable_set, "@#{k}", prepare_custom_query_arguments(k.to_sym, v))
+          end
+          # rebuild table alias
+          @query.rebuild_tables!
+          # rebuild 'select' aliases
+          @query.rebuild_attributes_hash!
+        end
+      end
+      
     private
+      # Parse custom query arguments for special keywords (RELATION, NODE_ATTR, ETC)
+      # There might be a better way to use custom queries that avoids this parsing
+      def prepare_custom_query_arguments(key, value)
+        if value.kind_of?(Array)
+          value.map {|e| parse_custom_query_argument(key, e)}
+        elsif value.kind_of?(Hash)
+          value.each do |k,v|
+            if v.kind_of?(Array)
+              value[k] = v.map {|e| parse_custom_query_argument(key, e)}
+            else
+              value[k] = parse_custom_query_argument(key, v)
+            end
+          end
+        else
+          parse_custom_query_argument(key, value)
+        end
+      end
+    
       def table(table_name = nil, index = 0)
         if table_name.nil?
           context[:table_alias] || @query.table(@query.main_table, index)

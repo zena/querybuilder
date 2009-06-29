@@ -1,6 +1,7 @@
 class DummyProcessor < QueryBuilder::Processor
   self.main_table = "objects"
   self.main_class = 'DummyClass'
+  self.load_custom_queries File.join(File.dirname(__FILE__), '*')
 
   def default_scope
     'self'
@@ -50,6 +51,13 @@ class DummyProcessor < QueryBuilder::Processor
     else
       super
     end
+  end
+  
+  
+  # ******** And maybe overwrite these **********
+  def parse_custom_query_argument(key, value)
+    return nil unless value
+    super(key, value.gsub('REF_DATE', context[:ref_date] ? insert_bind(context[:ref_date]) : 'now()'))
   end
 
   private
