@@ -428,6 +428,7 @@ module QueryBuilder
           @query.rebuild_tables!
           # rebuild 'select' aliases
           @query.rebuild_attributes_hash!
+          true
         end
       end
       

@@ -12,7 +12,8 @@ module QueryBuilder
     end
     
     def main_table
-      @processor_class.main_table
+      # @main_table is only used in custom queries
+      @main_table || processor_class.main_table
     end
     
     def main_class
@@ -106,11 +107,15 @@ module QueryBuilder
       end
     end
     
-    # Used after setting @tables from custom query
+    # Used after setting @tables from custom query.
     def rebuild_tables!
       @table_alias = {}
       @tables.each do |t|
-        base, as, use_name = t.split(' ')
+        if t =~ /\A(.+)\s+AS\s+(.+)\Z/
+          base, use_name = $1, $2
+        else
+          base = use_name = t
+        end
         @table_alias[base] ||= []
         @table_alias[base] << use_name
       end

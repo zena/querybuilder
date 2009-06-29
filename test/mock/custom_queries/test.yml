@@ -13,13 +13,14 @@ DummyProcessor:
     order: a ASC
     
   two_table:
+    main_table: 'table_one'
     select:
-      - x
+      - x AS x
       - IF(table_one.y,table_one.y,table_two.z) AS y
       - table_two.name
-    tables:
-      - table_one
+    tables:  
       - table_two
+      - table_one
       
   two_table_main:
     main_table: foo

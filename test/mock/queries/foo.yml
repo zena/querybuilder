@@ -7,5 +7,5 @@ DummyProcessor:
     select:
       - foo
     tables:
-      - foot
-    order: f desc
+      - objects
+    order: f DESC
