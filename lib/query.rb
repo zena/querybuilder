@@ -84,7 +84,7 @@ module QueryBuilder
     end
     
     def table(table_name = main_table, index = 0)
-      @table_alias[table_name][index - 1]
+      @table_alias[table_name] ? @table_alias[table_name][index - 1] : nil
     end
     
     # Use this method to add a join to another table (added only once for each join name).

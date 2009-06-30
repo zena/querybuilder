@@ -63,12 +63,10 @@ class DummyProcessor < QueryBuilder::Processor
   private
     def class_relation(relation)
       case relation
-      when 'users'  
-        add_table('users')
-        add_table(main_table)
-        add_filter "#{table('users')}.node_id = #{field_or_attr('id')}"
-        this.apply_scope(default_scope) if context[:last]
+      when 'users'
         change_processor 'UserProcessor'
+        add_table('users')
+        add_filter "#{table('users')}.node_id = #{field_or_attr('id', table(self.class.main_table))}"
         return true
       else
         return nil

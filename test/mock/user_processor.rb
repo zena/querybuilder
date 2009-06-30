@@ -1,3 +1,6 @@
+class TestUser
+end
+
 class UserProcessor < QueryBuilder::Processor
   self.main_table = 'users'
   self.main_class = 'TestUser'

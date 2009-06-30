@@ -83,6 +83,8 @@ module QueryBuilder
       :<< => :left_shift, :>> => :right_shift,
       :& => :bitwise_and,
       :| => :bitwise_or,
+      :eq => :equal, :ge => :greater_or_equal,
+      :gt => :greater, :le => :smaller_or_equal, :lt => :smaller, :ne => :not_equal,
       :"=" => :equal, :"<=>" => :null_safe_equal, :>= => :greater_or_equal,
       :> => :greater, :<= => :smaller_or_equal, :< => :smaller, :"<>" => :not_equal, :"!=" => :not_equal,
       :"&&" => :and,
