@@ -1,7 +1,6 @@
-
 require 'rubygems'
-require 'ruby-debug'
-Debugger.start
+require 'rubyless'
+
 module QueryBuilder
   class Processor
     attr_reader :context, :query, :sxp, :ancestor
@@ -94,6 +93,7 @@ module QueryBuilder
     
     def initialize(source, opts = {})
       @opts = opts
+      @rubyless_helper = @opts[:rubyless_helper]
       if source.kind_of?(Processor)
         # experimental: class change
         @context  = source.context
@@ -130,11 +130,15 @@ module QueryBuilder
       end
       
       def process_clause_or(clause1, clause2)
-        this.process(clause2)
+        process(clause2)
         query2 = @query
         @query = Query.new(this.class)
-        this.process(clause1)
-        
+        process(clause1)
+        merge_queries(@query, query2)
+      end
+      
+      def merge_queries(query1, query2)
+        @query = query1
         @query.tables = (@query.tables + query2.tables).uniq
         @query.where  = ["((#{@query.where.reverse.join(' AND ')}) OR (#{query2.where.reverse.join(' AND ')}))"]
         @query.distinct = true
@@ -270,6 +274,17 @@ module QueryBuilder
       
       def process_string(string)
         insert_bind(string.inspect)
+      end
+      
+      def process_dstring(string)
+        raise QueryException.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
+        insert_bind(RubyLess.translate("\"#{string}\"", helper))
+      end
+      
+      def process_rubyless(string)
+        # compile RubyLess...
+        raise QueryException.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
+        insert_bind(RubyLess.translate(string, helper))
       end
       
       def process_interval(value, interval)

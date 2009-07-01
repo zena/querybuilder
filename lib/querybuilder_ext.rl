@@ -7,6 +7,8 @@ static VALUE rb_QueryException = Qnil;
 /* symbols */
 static VALUE _query;
 static VALUE _string;
+static VALUE _dstring;
+static VALUE _rubyless;
 static VALUE _integer;
 static VALUE _real;
 static VALUE _field;
@@ -50,6 +52,8 @@ void Init_querybuilder_ext() {
 	/* store symbols */
   STORE_SYM(query);
 	STORE_SYM(string);
+	STORE_SYM(dstring);
+	STORE_SYM(rubyless);
   STORE_SYM(integer);
   STORE_SYM(real);
   STORE_SYM(field);
@@ -102,6 +106,16 @@ void Init_querybuilder_ext() {
 
   action string {
     SET_TMP_ARY(_string);
+    rb_ary_push(last, tmp);
+  }
+  
+  action dstring {
+    SET_TMP_ARY(_dstring);
+    rb_ary_push(last, tmp);
+  }
+  
+  action rubyless {
+    SET_TMP_ARY(_rubyless);
     rb_ary_push(last, tmp);
   }
 

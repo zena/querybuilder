@@ -9,12 +9,13 @@ $hoe = Hoe.new('querybuilder', QueryBuilder::VERSION) do |p|
   p.rubyforge_name       = 'querybuilder'
   p.extra_deps           = [
     ['yamltest','>= 0.5.0'],
+    ['rubyless','>= 0.2.0'],
   ]
   p.extra_dev_deps = [
     ['newgem', ">= #{::Newgem::VERSION}"]
   ]
   
-  p.clean_globs |= %w[**/.DS_Store tmp *.log]
+  p.clean_globs |= %w[**/.DS_Store tmp *.log **/._*]
   path = (p.rubyforge_name == p.name) ? p.rubyforge_name : "\#{p.rubyforge_name}/\#{p.name}"
   p.remote_rdoc_dir = File.join(path.gsub(/^#{p.rubyforge_name}\/?/,''), 'rdoc')
   p.rsync_args = '-av --delete --ignore-errors'

@@ -162,7 +162,7 @@ module QueryBuilder
 
         # get bind variables
         bind_values = []
-        statement.gsub!(/\[\[(.*?)\]\]/) do
+        statement.gsub!(/\[\[(.*?)\]\](?!\])/) do
           bind_values << $1
           '?'
         end

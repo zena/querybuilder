@@ -7,12 +7,12 @@ users_where_name_from_objects:
   res: "TestUser: [\"SELECT users.* FROM objects AS ob1,users WHERE users.name = ? AND users.node_id = ob1.id AND ob1.parent_id = ? GROUP BY users.id ORDER BY users.name ASC, users.first_name ASC\", \"bob\", id]"
   
 objects_from_users_from_objects:
-  src: 'objects from users where name = "foo" from objects where event_at > REF_DATE order by event_at asc'
+  src: "objects from users where name = 'foo' from objects where event_at > REF_DATE order by event_at asc"
   res: '["SELECT objects.* FROM objects,objects AS ob1,users AS us1 WHERE objects.id = us1.node_id AND us1.name = ? AND us1.node_id = ob1.id AND ob1.event_at > now() AND ob1.parent_id = ? GROUP BY objects.id ORDER BY objects.event_at ASC", "foo", id]'
 
 users:
   res: "TestUser: [\"SELECT users.* FROM users WHERE users.node_id = ? ORDER BY users.name ASC, users.first_name ASC\", id]"
 
 users_with_filter:
-  src: 'users where name = "foo"'
+  src: "users where name = 'foo'"
   res: 'TestUser: ["SELECT users.* FROM users WHERE users.name = ? AND users.node_id = ? ORDER BY users.name ASC, users.first_name ASC", "foo", id]'

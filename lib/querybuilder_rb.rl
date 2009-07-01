@@ -12,6 +12,16 @@ module QueryBuilder
       str_buf = ""
     }
   
+    action dstring {
+      last << [:dstring, str_buf]
+      str_buf = ""
+    }
+  
+    action rubyless {
+      last << [:rubyless, str_buf]
+      str_buf = ""
+    }
+
     action integer {
       last << [:integer, str_buf]
       str_buf = ""

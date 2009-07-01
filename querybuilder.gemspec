@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.email = ["gaspard@teti.ch"]
   s.extra_rdoc_files = ["History.txt", "Manifest.txt", "PostInstall.txt", "README.rdoc"]
   
-  s.files = ["History.txt", "Manifest.txt", "README.rdoc", "Rakefile", "lib/QueryBuilder.rb", "script/console", "script/destroy", "script/generate", "test/mock/custom_queries", "test/mock/custom_queries/test.yml", "test/mock/dummy_query.rb", "test/mock/user_query.rb", "test/QueryBuilder/basic.yml", "test/QueryBuilder/errors.yml", "test/QueryBuilder/filters.yml", "test/QueryBuilder/joins.yml", "test/QueryBuilder/mixed.yml", "test/test_helper.rb", "test/test_QueryBuilder.rb"]
+  s.files = ["History.txt", "Manifest.txt", "README.rdoc", "Rakefile", "lib/extconf.rb", "lib/parser.rb", "lib/processor.rb", "lib/query.rb", "lib/querybuilder.rb", "lib/querybuilder_ext.c", "lib/querybuilder_rb.rb", "lib/querybuilder_rb.rl", "lib/querybuilder_ext.rl", "lib/querybuilder_syntax.rl", "lib/version.rb", "script/console", "script/destroy", "script/generate", "test/mock/custom_queries", "test/mock/custom_queries/test.yml", "test/mock/dummy_processor.rb", "test/mock/user_processor.rb", "test/querybuilder/basic.yml", "test/querybuilder/custom.yml", "test/querybuilder/errors.yml", "test/querybuilder/filters.yml", "test/querybuilder/joins.yml", "test/querybuilder/mixed.yml", "test/test_helper.rb", "test/querybuilder_test.rb", "test/query_test.rb"]
   s.has_rdoc = true
   s.homepage = %q{http://zenadmin.org/en/community/module524.html}
   s.post_install_message = %q{PostInstall.txt}

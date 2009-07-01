@@ -1,8 +1,15 @@
 require File.dirname(__FILE__) + '/test_helper.rb'
 require 'benchmark'
 
+class StringHash
+end
+
 class DummyQueryBuilder < Test::Unit::TestCase
   yamltest
+  include RubyLess::SafeClass
+  safe_method :params => {:class => StringHash, :method => 'get_params'}
+  safe_method_for StringHash, [:[], Symbol] => String
+  safe_method_for StringHash, [:[], String] => String
   
   def id;         123;  end
   def parent_id;  333;  end
@@ -11,7 +18,7 @@ class DummyQueryBuilder < Test::Unit::TestCase
   
   
   def yt_parse(key, source, opts)
-    opts = Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)]
+    opts = {:rubyless_helper => self}.merge(Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)])
     
     case key
     when 'res'

@@ -5,7 +5,9 @@
   var      = ws* ([a-zA-Z_]+) $str_a;
   dquote   = ([^"\\] | '\n') $str_a | ('\\' (any | '\n') $str_a);
   squote   = ([^'\\] | '\n') $str_a | ('\\' (any | '\n') $str_a);
-  string   = ws* ("'" squote* "'" >string | '"' dquote* '"' >string);
+  string   = ws* ("'" squote* "'" >string | '"' dquote* '"' >dstring);
+  rcontent = ('"' dquote* '"') $str_a | ([^\}"\\] | '\n') $str_a | ('\\' (any | '\n') $str_a) ;
+  rubyless = ws* "#{" rcontent+ "}" >rubyless;
   real     = ws* ('-'? ('0'..'9' digit* '.' digit+) ) $str_a %real;
   integer  = ws* ('-'? digit+ ) $str_a %integer;
   number   = (real | integer);
@@ -13,7 +15,7 @@
   text_op  = ws+ (('or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt') $str_a | ('not' $str_a %operator ws+)? 'like' $str_a);
   operator = (op %operator | text_op %operator ws+);
   interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a %interval 's'?;
-  value    = ((var %field | string | number) interval? | ws* '(' >goto_expr_p ws* ')');
+  value    = ((var %field | string | number | rubyless) interval? | ws* '(' >goto_expr_p ws* ')');
   expr     = value (operator value)*;
   expr_p  := expr ws* ')' $expr_close;
 
