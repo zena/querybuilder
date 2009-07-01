@@ -1,0 +1,11 @@
+parsing:
+  src: 'objects where name like "#{name}%" or event_at > #{params[:blow]} or name = #{this.is.ruby("with more #{stuff}")}'
+  sxp: '[:query, [:filter, [:relation, "objects"], [:or, [:or, [:like, [:field, "name"], [:dstring, "\#{name}%"]], [:>, [:field, "event_at"], [:rubyless, "params[:blow]"]]], [:"=", [:field, "name"], [:rubyless, "this.is.ruby(\"with more \#{stuff}\")"]]]]]'
+
+dstring_eval:
+  src: 'objects where name like "#{params[:name]}%"'
+  res: '["SELECT objects.* FROM objects WHERE objects.name LIKE ? AND objects.parent_id = ?", "#{get_params[:name]}%", id]'
+
+eval:
+  src: 'objects where name = #{params[:name]}'
+  res: '["SELECT objects.* FROM objects WHERE objects.name = ? AND objects.parent_id = ?\", get_params[:name], id]'
