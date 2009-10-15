@@ -2,7 +2,8 @@ History.txt
 Manifest.txt
 README.rdoc
 Rakefile
-lib/QueryBuilder.rb
+lib/query_builder.rb
+lib/querybuilder.rb
 script/console
 script/destroy
 script/generate
