@@ -10,7 +10,7 @@ recipients_where_kpath:
 hand_made_class_filter:
   src: "recipients where kpath like 'NRCC%'"
   res: "[\"SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", \"NRCC%\", id]"
-  
+
 better_class_filter:
   src: "recipients where class = 'Client'"
   res: "[\"SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", \"NRCC%\", id]"

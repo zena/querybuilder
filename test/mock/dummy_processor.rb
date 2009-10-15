@@ -61,6 +61,7 @@ class DummyProcessor < QueryBuilder::Processor
   end
 
   private
+    # Change class
     def class_relation(relation)
       case relation
       when 'users'

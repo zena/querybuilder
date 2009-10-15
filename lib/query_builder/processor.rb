@@ -52,8 +52,12 @@ module QueryBuilder
               definitions = YAML::load(File.read(File.join(dir,file)))
               custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
               definitions.each do |klass,v|
-                klass = Module.const_get(klass)
-                raise ArgumentError.new("Invalid Processor class (#{klass}). Should be a descendant of QueryBuilder::Processor.") unless klass.ancestors.include?(Processor)
+                begin
+                  klass = Module.const_get(klass)
+                  raise ArgumentError.new("Invalid Processor class '#{klass}' in '#{file}' custom query. Should be a descendant of QueryBuilder::Processor.") unless klass.ancestors.include?(Processor)
+                rescue NameError
+                  raise ArgumentError.new("Unknown Processor class '#{klass}' in '#{file}' custom query.")
+                end
                 custom_queries[klass] ||= {}
                 custom_query_groups.each do |custom_query_group|
                   custom_queries[klass][custom_query_group] ||= {}
@@ -220,6 +224,26 @@ module QueryBuilder
           raise QueryException.new("Unknown relation '#{relation}'.")
         end
       end
+      
+      # See if the relation name means that we need to change processor class.
+      def class_relation(relation)
+        nil
+      end
+      
+      # Try to use the relation name as a join relation (relation involving another table).
+      def join_relation(relation)
+        nil
+      end
+      
+      # Try to use the relation name as a contextual relation (context filtering like "parent", "project", etc).
+      def context_relation(relation)
+        nil
+      end
+      
+      # Try to use the relation name as a filtering relation and use default scope for scoping (ex: "images", "notes").
+      def filter_relation(relation)
+        nil
+      end
             
       def process_scope(relation, scope)
         this.with(:scope => scope) do
@@ -228,6 +252,7 @@ module QueryBuilder
       end
       
       def apply_scope(scope)
+        context[:processing] = :scope
         if fields = scope_fields(scope)
           add_filter("#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}") if fields != []
         else
@@ -249,7 +274,7 @@ module QueryBuilder
       def process_field(fld_name)
         if fld = @query.attributes_alias[fld_name]
           # use custom query alias value defined in select clause: 'custom_a AS validation'
-          context == :filter ? "(#{fld})" : fld
+          context[:processing] == :filter ? "(#{fld})" : fld
         else
           raise QueryException.new("Unknown field '#{fld_name}'.")
         end
@@ -265,6 +290,7 @@ module QueryBuilder
       
       def process_filter(relation, filter)
         process(relation)
+        context[:processing] = :filter
         add_filter process(filter)
       end
       
@@ -311,12 +337,14 @@ module QueryBuilder
       def process_order(*args)
         variables = args
         process(variables.shift)  # parse query
+        context[:processing] = :order
         @query.order = " ORDER BY #{variables.map {|var| process(var)}.join(', ')}"
       end
       
       def process_group(*args)
         variables = args
         process(variables.shift)  # parse query
+        context[:processing] = :group
         @query.group = " GROUP BY #{variables.map {|var| process(var)}.join(', ')}"
       end
       
@@ -327,6 +355,7 @@ module QueryBuilder
       def process_limit(*args)
         variables = args
         process(variables.shift)  # parse query
+        context[:processing] = :limit
         if variables.size == 1
           @query.limit  = " LIMIT #{process(variables.first)}"
         else  
@@ -338,12 +367,14 @@ module QueryBuilder
       def process_offset(query, offset)
         process(query)
         raise QueryException.new("Invalid offset (used without limit).") unless @query.limit
+        context[:processing] = :limit
         @query.offset = " OFFSET #{process(offset)}"
       end
       
       def process_paginate(query, paginate_fld)
         process(query)
         raise QueryException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
+        context[:processing] = :paginate
         fld = process(paginate_fld)
         if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])
           @query.page_size = [2, page_size.to_i].max
