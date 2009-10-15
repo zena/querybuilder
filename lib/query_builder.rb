@@ -462,13 +462,18 @@ class QueryBuilder
       end
     end
 
-    def add_table(table_name)
-      if !@table_counter[table_name]
-        @table_counter[table_name] = 0
-        @tables << table_name
+    def add_table(use_name, table_name = nil)
+      table_name ||= use_name
+      if !@table_counter[use_name]
+        @table_counter[use_name] = 0
+        if use_name != table_name
+          @tables << "#{table_name} as #{use_name}"
+        else
+          @tables << table_name
+        end
       else
-        @table_counter[table_name] += 1
-        @tables << "#{table_name} AS #{table(table_name)}"
+        @table_counter[use_name] += 1
+        @tables << "#{table_name} AS #{table(use_name)}"
       end
     end
 
