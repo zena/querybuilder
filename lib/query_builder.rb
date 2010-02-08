@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.6'
+  VERSION = '0.5.7'
 
   @@main_table = {}
   @@main_class = {}
