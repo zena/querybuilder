@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.7'
+  VERSION = '0.5.8'
 
   @@main_table = {}
   @@main_class = {}
@@ -70,7 +70,11 @@ class QueryBuilder
             definitions = YAML::load(File.read(File.join(dir,file)))
             custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
             definitions.each do |klass,v|
-              klass = Module.const_get(klass)
+              constant = nil
+              klass.split('::').each do |m|
+                constant = constant ? constant.const_get(m) : Module.const_get(m)
+              end
+              klass = constant
               raise ArgumentError.new("invalid class for CustomQueries (#{klass})") unless klass.ancestors.include?(QueryBuilder)
               @@custom_queries[klass] ||= {}
               custom_query_groups.each do |custom_query_group|
@@ -205,7 +209,11 @@ class QueryBuilder
   # DummyQuery.new("comments from nodes in project").main_class
   # => Comment
   def main_class
-    Module.const_get(@@main_class[self.class])
+    constant = nil
+    @@main_class[self.class].split('::').each do |m|
+      constant = constant ? constant.const_get(m) : Module.const_get(m)
+    end
+    constant
   end
 
   protected

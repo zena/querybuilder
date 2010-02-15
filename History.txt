@@ -1,8 +1,15 @@
+== 0.5.8 2010-02-15
+
+* 1 major enhancement
+  * Const_get code was not included in gem
+
 == 0.5.7 2010-02-08
+
 * 1 minor enhancement
   * Fixed class const_get to enable custom queries on classes in modules
 
 == 0.5.6 2009-10-15
+
 * 1 minor enhancement
   * Fixed library name (was not loaded on case sensitive systems)
 
