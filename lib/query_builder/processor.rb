@@ -4,11 +4,11 @@ require 'rubyless'
 module QueryBuilder
   class Processor
     attr_reader :context, :query, :sxp, :ancestor
-    
+
     class << self
       # class variable
       attr_accessor :main_table, :main_class, :custom_queries
-      
+
       # Load prepared SQL definitions from a set of directories. If the file does not contain "group" or "groups" keys,
       # the filename is used as group.
       #
@@ -53,7 +53,7 @@ module QueryBuilder
               custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
               definitions.each do |klass,v|
                 begin
-                  klass = Module.const_get(klass)
+                  klass = QueryBuilder.resolve_const(klass)
                   raise ArgumentError.new("Invalid Processor class '#{klass}' in '#{file}' custom query. Should be a descendant of QueryBuilder::Processor.") unless klass.ancestors.include?(Processor)
                 rescue NameError
                   raise ArgumentError.new("Unknown Processor class '#{klass}' in '#{file}' custom query.")
@@ -75,7 +75,7 @@ module QueryBuilder
       end
 
     end
-    
+
     VERSION = '1.0.0'
     OPERATOR_TO_METHOD = {
       :"!" => :not,
@@ -94,7 +94,7 @@ module QueryBuilder
       :"||" => :or,
       :":=" => :assign
     }
-    
+
     def initialize(source, opts = {})
       @opts = opts
       @rubyless_helper = @opts[:rubyless_helper]
@@ -111,16 +111,16 @@ module QueryBuilder
         @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
       end
     end
-    
+
     protected
       def this
         @this || self
       end
-      
+
       def this=(processor)
         @this = processor
       end
-      
+
       def process(sxp)
         return sxp if sxp.kind_of?(String)
         method = "process_#{OPERATOR_TO_METHOD[sxp.first] || sxp.first}"
@@ -132,7 +132,7 @@ module QueryBuilder
           raise QueryException.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
         end
       end
-      
+
       def process_clause_or(clause1, clause2)
         process(clause2)
         query2 = @query
@@ -140,18 +140,18 @@ module QueryBuilder
         process(clause1)
         merge_queries(@query, query2)
       end
-      
+
       def merge_queries(query1, query2)
         @query = query1
         @query.tables = (@query.tables + query2.tables).uniq
         @query.where  = ["((#{@query.where.reverse.join(' AND ')}) OR (#{query2.where.reverse.join(' AND ')}))"]
         @query.distinct = true
       end
-      
+
       def process_clause_par(content)
         process(content)
       end
-      
+
       # A query can be made of many clauses:
       # [letters from friends] or [images in project]
       def process_query(args)
@@ -163,7 +163,7 @@ module QueryBuilder
           this.process(order)
         end
       end
-      
+
       # Parse sub-query from right to left
       def process_from(query, sub_query)
         @query.distinct = true
@@ -174,11 +174,11 @@ module QueryBuilder
           this.process(query)
         end
       end
-      
+
       def first?
         this.context[:first]
       end
-      
+
       def last?
         this.context[:last]
       end
@@ -211,46 +211,46 @@ module QueryBuilder
 
     In case (1) or (2), scope should be processed before the relation. In case (3),
     it should be processed after.
-=end      
+=end
       def process_relation(relation)
         if custom_query(relation)
           # load custom query
         elsif class_relation(relation)
           # changed class
-        elsif (context[:scope_type] = :join)    && join_relation(relation)  
+        elsif (context[:scope_type] = :join)    && join_relation(relation)
         elsif (context[:scope_type] = :context) && context_relation(relation)
         elsif (context[:scope_type] = :filter)  && filter_relation(relation)
         else
           raise QueryException.new("Unknown relation '#{relation}'.")
         end
       end
-      
+
       # See if the relation name means that we need to change processor class.
       def class_relation(relation)
         nil
       end
-      
+
       # Try to use the relation name as a join relation (relation involving another table).
       def join_relation(relation)
         nil
       end
-      
+
       # Try to use the relation name as a contextual relation (context filtering like "parent", "project", etc).
       def context_relation(relation)
         nil
       end
-      
+
       # Try to use the relation name as a filtering relation and use default scope for scoping (ex: "images", "notes").
       def filter_relation(relation)
         nil
       end
-            
+
       def process_scope(relation, scope)
         this.with(:scope => scope) do
           this.process(relation)
         end
       end
-      
+
       def apply_scope(scope)
         context[:processing] = :scope
         if fields = scope_fields(scope)
@@ -260,7 +260,7 @@ module QueryBuilder
         end
         true
       end
-      
+
       def field_or_attr(fld_name, table_alias = table)
         if table_alias
           this.with(:table_alias => table_alias) do
@@ -270,7 +270,7 @@ module QueryBuilder
           this.process_attr(fld_name)
         end
       end
-      
+
       def process_field(fld_name)
         if fld = @query.attributes_alias[fld_name]
           # use custom query alias value defined in select clause: 'custom_a AS validation'
@@ -279,53 +279,53 @@ module QueryBuilder
           raise QueryException.new("Unknown field '#{fld_name}'.")
         end
       end
-      
+
       def process_integer(value)
         value
       end
-      
+
       def process_attr(fld_name)
         insert_bind(fld_name)
       end
-      
+
       def process_filter(relation, filter)
         process(relation)
         context[:processing] = :filter
         add_filter process(filter)
       end
-      
+
       def process_par(content)
         content.first == :or ? process(content) : "(#{process(content)})"
       end
-      
+
       def process_string(string)
         insert_bind(string.inspect)
       end
-      
+
       def process_dstring(string)
         raise QueryException.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
         insert_bind(RubyLess.translate("\"#{string}\"", helper))
       end
-      
+
       def process_rubyless(string)
         # compile RubyLess...
         raise QueryException.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
         insert_bind(RubyLess.translate(string, helper))
       end
-      
+
       def process_interval(value, interval)
         "INTERVAL #{this.process(value)} #{interval.upcase}"
       end
-      
+
       def process_or(left, right)
         left_clause = left.first
         "(#{this.process(left)} OR #{this.process(right)})"
       end
-      
+
       def process_op(op, left, right)
         "#{process(left)} #{op.to_s.upcase} #{process(right)}"
       end
-      
+
       def process_not(expr)
         if expr.first == :like
           "#{this.process(expr[1])} NOT LIKE #{this.process(expr[2])}"
@@ -333,44 +333,44 @@ module QueryBuilder
           "NOT #{this.process(expr)}"
         end
       end
-      
+
       def process_order(*args)
         variables = args
         process(variables.shift)  # parse query
         context[:processing] = :order
         @query.order = " ORDER BY #{variables.map {|var| process(var)}.join(', ')}"
       end
-      
+
       def process_group(*args)
         variables = args
         process(variables.shift)  # parse query
         context[:processing] = :group
         @query.group = " GROUP BY #{variables.map {|var| process(var)}.join(', ')}"
       end
-      
+
       def process_void(*args)
         # do nothing
       end
-      
+
       def process_limit(*args)
         variables = args
         process(variables.shift)  # parse query
         context[:processing] = :limit
         if variables.size == 1
           @query.limit  = " LIMIT #{process(variables.first)}"
-        else  
+        else
           @query.limit  = " LIMIT #{process(variables.last)}"
           @query.offset = " OFFSET #{process(variables.first)}"
         end
       end
-      
+
       def process_offset(query, offset)
         process(query)
         raise QueryException.new("Invalid offset (used without limit).") unless @query.limit
         context[:processing] = :limit
         @query.offset = " OFFSET #{process(offset)}"
       end
-      
+
       def process_paginate(query, paginate_fld)
         process(query)
         raise QueryException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
@@ -381,26 +381,26 @@ module QueryBuilder
           @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
         else
           raise QueryException.new("Invalid paginate clause '#{paginate}'.")
-        end  
+        end
       end
-      
+
       def process_equal(left, right)
         process_op(:"=", left, right)
       end
-      
+
       # Used by paginate
       def process_param(param)
         param
       end
-      
+
       def process_asc(field)
         "#{process(field)} ASC"
       end
-      
+
       def process_desc(field)
         "#{process(field)} DESC"
       end
-      
+
       # ******** And maybe overwrite these **********
       def parse_custom_query_argument(key, value)
         return nil unless value
@@ -413,15 +413,15 @@ module QueryBuilder
           value
         end
       end
-      
+
       def insert_bind(str)
         "[[#{str}]]"
       end
-      
+
       def default_order_clause
         nil
       end
-      
+
       def with(hash)
         context_bak = @context
         res = ''
@@ -430,7 +430,7 @@ module QueryBuilder
         @context = context_bak
         res
       end
-      
+
       def restoring_this
         processor = self.this
         yield
@@ -439,14 +439,14 @@ module QueryBuilder
           change_processor(processor)
         end
       end
-      
+
       def change_processor(processor)
         if @this
           @this.change_processor(processor)
         else
           if processor.kind_of?(Processor)
           elsif processor.kind_of?(String)
-            processor = Module.const_get(processor).new(this)
+            processor = QueryBuilder.resolve_const(processor)
           else
             processor = processor.new(this)
           end
@@ -454,21 +454,21 @@ module QueryBuilder
           update_processor(processor)
         end
       end
-      
+
       def update_processor(processor)
         @this = processor
         if @ancestor
           @ancestor.update_processor(processor)
         end
       end
-      
+
       def custom_query(relation)
         return false unless first? && last?  # current safety net until "from" is correctly implemented and tested
         custom_queries = self.class.custom_queries[self.class]
-        if custom_queries && 
-           custom_queries[@opts[:custom_query_group]] && 
+        if custom_queries &&
+           custom_queries[@opts[:custom_query_group]] &&
            custom_query = custom_queries[@opts[:custom_query_group]][relation]
-           
+
           custom_query.each do |k,v|
             @query.send(:instance_variable_set, "@#{k}", prepare_custom_query_arguments(k.to_sym, v))
           end
@@ -479,7 +479,7 @@ module QueryBuilder
           true
         end
       end
-      
+
     private
       # Parse custom query arguments for special keywords (RELATION, NODE_ATTR, ETC)
       # There might be a better way to use custom queries that avoids this parsing
@@ -498,7 +498,7 @@ module QueryBuilder
           parse_custom_query_argument(key, value)
         end
       end
-    
+
       def table(table_name = nil, index = 0)
         if table_name.nil?
           context[:table_alias] || @query.table(@query.main_table, index)
@@ -515,7 +515,7 @@ module QueryBuilder
         else
           avoid_alias = false
         end
-        
+
         if use_name == main_table
           if context[:scope_type] == :join
             context[:scope_type] = nil
@@ -525,7 +525,7 @@ module QueryBuilder
               apply_scope(context[:scope])
             end
             @query.add_table(use_name, table_name, avoid_alias)
-          elsif context[:scope_type] == :filter  
+          elsif context[:scope_type] == :filter
             context[:scope_type] = nil
             # post scope
             @query.add_table(use_name, table_name, avoid_alias)
@@ -544,11 +544,11 @@ module QueryBuilder
       def main_table
         @query.main_table
       end
-      
+
       def needs_join_table(*args)
         @query.needs_join_table(*args)
       end
-      
+
       def add_filter(*args)
         @query.add_filter(*args)
       end

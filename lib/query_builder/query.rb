@@ -1,4 +1,4 @@
-module QueryBuilder  
+module QueryBuilder
   class Query
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where, :limit, :offset, :page_size, :order, :group, :error, :attributes_alias
     def initialize(processor_class)
@@ -10,21 +10,21 @@ module QueryBuilder
       @attributes_alias   = {}
       @where   = []
     end
-    
+
     def main_table
       # @main_table is only used in custom queries
       @main_table || processor_class.main_table
     end
-    
+
     def main_class
       klass = @processor_class.main_class
-      klass.kind_of?(String) ? Module.const_get(klass) : klass
+      QueryBuilder.resolve_const(klass)
     end
-    
+
     def add_filter(filter)
       @where << filter
     end
-    
+
     # Convert query object to a string. This string should then be evaluated.
     #
     # ==== Parameters
@@ -47,7 +47,7 @@ module QueryBuilder
       statement, bind_values = build_statement(type)
       bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
     end
-    
+
     # Convert the query object into an SQL query.
     #
     # ==== Parameters
@@ -76,17 +76,17 @@ module QueryBuilder
       alias_name = get_alias(use_name, table_name, avoid_alias)
       add_alias_to_tables(table_name || use_name, alias_name)
     end
-    
+
     def add_select(clause)
       @select ||= []
       @select << clause
       rebuild_attributes_hash!
     end
-    
+
     def table(table_name = main_table, index = 0)
       @table_alias[table_name] ? @table_alias[table_name][index - 1] : nil
     end
-    
+
     # Use this method to add a join to another table (added only once for each join name).
     # versions LEFT JOIN dyn_attributes ON ...
     def needs_join_table(table_name1, type, table_name2, clause, join_name = nil)
@@ -94,19 +94,19 @@ module QueryBuilder
       @needed_join_tables[join_name] ||= {}
       @needed_join_tables[join_name][table] ||= begin
         # define join for this part ('table' = unique for each part)
-        
+
         # don't add to list of tables, just get unique alias name
         second_table = get_alias(table_name2)
-        
+
         # create join
         first_table = table(table_name1)
-        
+
         @join_tables[first_table] ||= []
         @join_tables[first_table] << "#{type} JOIN #{second_table} ON #{clause.gsub('TABLE1',first_table).gsub('TABLE2',second_table)}"
         second_table
       end
     end
-    
+
     # Used after setting @tables from custom query.
     def rebuild_tables!
       @table_alias = {}
@@ -120,7 +120,7 @@ module QueryBuilder
         @table_alias[base] << use_name
       end
     end
-    
+
     def rebuild_attributes_hash!
       @attributes_alias = {}
       @select.each do |attribute|
@@ -129,7 +129,7 @@ module QueryBuilder
         end
       end
     end
-    
+
     private
       # Make sure each used table gets a unique name
       def get_alias(use_name, table_name = nil, avoid_alias = true)
@@ -144,11 +144,11 @@ module QueryBuilder
           # ob1, obj2, objects
           alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
         end
-      
+
         @table_alias[use_name] << alias_name
         alias_name
       end
-    
+
       def add_alias_to_tables(table_name, alias_name)
         if alias_name != table_name
           @tables << "#{table_name} AS #{alias_name}"
@@ -156,7 +156,7 @@ module QueryBuilder
           @tables << table_name
         end
       end
-      
+
       def build_statement(type = :find)
         statement = type == :find ? find_statement : count_statement
 
@@ -184,7 +184,7 @@ module QueryBuilder
         if !group && @distinct
           group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
         end
-        
+
         "SELECT #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
@@ -211,11 +211,11 @@ module QueryBuilder
 
         "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}")
       end
-      
+
       def get_connection(bindings)
         eval "#{main_class}.connection", bindings
       end
-      
+
       # Adapted from Rail's ActiveRecord code. We need "eval" because
       # QueryBuilder is a compiler and it has absolutely no knowledge
       # of the running context.
