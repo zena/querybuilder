@@ -37,7 +37,7 @@ custom_query_having:
   context:
     custom_query_group: test
   src: "abc where number > 12"
-  res: "\"SELECT a,34 AS number,c FROM test WHERE 34 > 12 AND 3 AND 2 AND 1 ORDER BY a ASC\""
+  res: "\"SELECT a,34 AS number,c FROM test WHERE (34) > 12 AND 3 AND 2 AND 1 ORDER BY a ASC\""
 
 equation_in_filter:
   src: "objects where event_at > REF_DATE + custom_a months"
