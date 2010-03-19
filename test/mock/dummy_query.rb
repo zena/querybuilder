@@ -1,23 +1,27 @@
+=begin
+
+This is legacy code to be removed when all the features are back in place.
+
 class DummyQuery < QueryBuilder
   set_main_table 'objects'
   set_main_class 'DummyClass'
-  
+
   load_custom_queries File.join(File.dirname(__FILE__), '*')
-  
+
   # Build joins and filters from a relation.
   def parse_relation(rel, context)
     unless context_relation(rel, context) || direct_filter(rel, context) || join_relation(rel, context)
       @errors << "unknown relation '#{rel}'"
     end
   end
-  
+
   # default context filter is to search in the current node's children (in self)
   def default_context_filter
     'self'
   end
-  
+
   private
-    
+
     # Root filters (relations that can be solved without a join). Think 'in clause' (in self, in parent).
     def context_filter_fields(clause, is_last = false)
       case clause
@@ -33,7 +37,7 @@ class DummyQuery < QueryBuilder
         nil
       end
     end
-    
+
     def context_relation(clause, context)
       case clause
       when 'self'
@@ -48,7 +52,7 @@ class DummyQuery < QueryBuilder
       else
         return false
       end
-      
+
       @where << "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table,-1))}"
     end
 
@@ -77,7 +81,7 @@ class DummyQuery < QueryBuilder
         return nil
       end
     end
-    
+
     # Filters that need a join
     def join_relation(rel, context)
       case rel
@@ -92,12 +96,12 @@ class DummyQuery < QueryBuilder
       else
         return false
       end
-      
+
       add_table('links')
       # source --> target
       @where << "#{field_or_attr('id')} = #{table('links')}.#{fields[2]} AND #{table('links')}.relation_id = #{fields[1]} AND #{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
     end
-    
+
     # Overwrite this and take car to check for valid fields.
     def map_field(fld, table_name, is_null = false)
       if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a'].include?(fld)
@@ -112,3 +116,4 @@ class DummyClass
   def self.connection; self; end
   def self.quote(obj); "[[#{obj}]]"; end
 end
+=end

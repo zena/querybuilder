@@ -1,5 +1,5 @@
 class DummyProcessor < QueryBuilder::Processor
-  self.main_table = "objects"
+  self.main_table = 'objects'
   self.main_class = 'DummyClass'
   self.load_custom_queries File.join(File.dirname(__FILE__), '*')
 
@@ -7,7 +7,7 @@ class DummyProcessor < QueryBuilder::Processor
     'self'
   end
 
-  # Scope current context with previous context. 
+  # Scope current context with previous context.
   # For example:
   #                          current         previous
   #  ['parent_id', 'id'] ==> no1.parent_id = nodes.id
@@ -38,7 +38,7 @@ class DummyProcessor < QueryBuilder::Processor
       super # raises an error
     end
   end
-  
+
   def process_equal(left, right)
     if left == [:field, 'class'] && right[0] == :string
       case right.last
@@ -52,8 +52,8 @@ class DummyProcessor < QueryBuilder::Processor
       super
     end
   end
-  
-  
+
+
   # ******** And maybe overwrite these **********
   def parse_custom_query_argument(key, value)
     return nil unless value
@@ -72,8 +72,8 @@ class DummyProcessor < QueryBuilder::Processor
       else
         return nil
       end
-    end  
-    
+    end
+
     # Moving to another context without a join table
     def context_relation(relation)
       case relation
@@ -86,7 +86,7 @@ class DummyProcessor < QueryBuilder::Processor
       else
         return nil
       end
-      
+
       add_table(main_table)
       add_filter "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}"
     end
@@ -121,7 +121,7 @@ class DummyProcessor < QueryBuilder::Processor
       else
         return false
       end
-      
+
       add_table(main_table)
       add_table('links')
       # source --> target
