@@ -1,31 +1,33 @@
-== 0.6.0 2009-06-...
-* 1 major enhancement:
-  * complete rewrite of parser and processor
-  * non compatible with previous parser
-  * change in pseudo sql syntax: only support for "asc" or "desc" (downcase)
-  
+== 0.6.0 2010-03-19
+
+* 4 major enhancement:
+  * Complete rewrite of parser and processor.
+  * Non compatible with previous parser.
+  * Change in pseudo sql syntax: only support for "asc" or "desc" (downcase).
+  * Using jeweler instead of hoe to package gem.
+
 == 0.5.4 2009-04-09
 
 * 1 minor enhancement:
-  * Fixed a bug counting records wrong with multiple group fields
+  * Fixed a bug counting records wrong with multiple group fields.
 
 == 0.5.3 2009-04-08
 
 * 1 minor enhancement:
-  * Added support for limit and paginate in custom queries
+  * Added support for limit and paginate in custom queries.
 
 == 0.5.2 2009-04-03
 
 * 1 minor enhancement:
-  * Added support for main_table option in custom queries
-  * More tests for custom queries
-  
+  * Added support for main_table option in custom queries.
+  * More tests for custom queries.
+
 == 0.5.1 2009-03-03
 
 * 1 minor enhancement:
-  * Added support for glob directories in load_custom_queries
-  
+  * Added support for glob directories in load_custom_queries.
+
 == 0.5.0 2009-01-23
 
 * 1 major enhancement:
-  * Initial release (extraction from zena: http://zenadmin.org)
+  * Initial release (extraction from zena: http://zenadmin.org).

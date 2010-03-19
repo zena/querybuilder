@@ -1,28 +1,61 @@
-%w[rubygems rake rake/clean fileutils newgem rubigen].each { |f| require f }
-require File.dirname(__FILE__) + '/lib/version'
+require 'rubygems'
+require 'rake'
+require(File.join(File.dirname(__FILE__), 'lib/query_builder/info'))
 
-# Generate all the Rake tasks
-# Run 'rake -T' to see list of generated tasks (from gem root directory)
-$hoe = Hoe.new('querybuilder', QueryBuilder::VERSION) do |p|
-  p.developer('Gaspard Bucher', 'gaspard@teti.ch')
-  p.changes              = p.paragraphs_of("History.txt", 0..1).join("\n\n")
-  p.rubyforge_name       = 'querybuilder'
-  p.extra_deps           = [
-    ['yamltest','>= 0.5.0'],
-    ['rubyless','>= 0.2.0'],
-  ]
-  p.extra_dev_deps = [
-    ['newgem', ">= #{::Newgem::VERSION}"]
-  ]
-  
-  p.clean_globs |= %w[**/.DS_Store tmp *.log **/._*]
-  path = (p.rubyforge_name == p.name) ? p.rubyforge_name : "\#{p.rubyforge_name}/\#{p.name}"
-  p.remote_rdoc_dir = File.join(path.gsub(/^#{p.rubyforge_name}\/?/,''), 'rdoc')
-  p.rsync_args = '-av --delete --ignore-errors'
+begin
+  require 'jeweler'
+  Jeweler::Tasks.new do |gem|
+    gem.version = QueryBuilder::VERSION
+    gem.name = 'querybuilder'
+    gem.summary = %Q{QueryBuilder is an interpreter for the "pseudo sql" language.}
+    gem.description = %Q{QueryBuilder is an interpreter for the "pseudo sql" language. This language
+    can be used for two purposes:
+
+     1. protect your database from illegal SQL by securing queries
+     2. ease writing complex relational queries by abstracting table internals}
+    gem.email = "gaspard@teti.ch"
+    gem.homepage = "http://zenadmin.org/524"
+    gem.authors = ["Gaspard Bucher"]
+    gem.add_dependency "rubyless", ">= 0.4.0"
+    gem.add_development_dependency "shoulda", ">= 0"
+    gem.add_development_dependency "yamltest", ">= 0.5.0"
+    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
+  end
+  Jeweler::GemcutterTasks.new
+rescue LoadError
+  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
 end
 
-require 'newgem/tasks' # load /tasks/*.rake
-Dir['tasks/**/*.rake'].each { |t| load t }
+require 'rake/testtask'
+Rake::TestTask.new(:test) do |test|
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/*_test.rb'
+  test.verbose = true
+end
 
-# TODO - want other tests/tasks run by default? Add them to the list
-# task :default => [:spec, :features]
+begin
+  require 'rcov/rcovtask'
+  Rcov::RcovTask.new do |test|
+    test.libs << 'test'
+    test.pattern = 'test/**/*_test.rb'
+    test.verbose = true
+  end
+rescue LoadError
+  task :rcov do
+    abort "RCov is not available. In order to run rcov, you must: sudo gem install spicycode-rcov"
+  end
+end
+
+task :test => :check_dependencies
+
+task :default => :test
+
+require 'rake/rdoctask'
+Rake::RDocTask.new do |rdoc|
+  version = File.exist?('VERSION') ? File.read('VERSION') : ""
+
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title = "QueryBuilder #{version}"
+  rdoc.rdoc_files.include('README*')
+  rdoc.rdoc_files.include('lib/**/*.rb')
+end

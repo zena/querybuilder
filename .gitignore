@@ -1,6 +1,7 @@
 .*
-pkg
+*.gem
 lib/Makefile
 lib/*.o
 lib/*.bundle
 lib/*.so
+coverage
