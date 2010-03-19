@@ -64,7 +64,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://zenadmin.org/524}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{QueryBuilder is an interpreter for the "pseudo sql" language.}
   s.test_files = [
     "test/mock/dummy_processor.rb",

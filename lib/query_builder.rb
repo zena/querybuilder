@@ -1,15 +1,16 @@
 module QueryBuilder
   class QueryException < Exception
   end
-  
-  def self.resolve_const(m)
-    if m.kind_of?(String)
+
+  def self.resolve_const(klass)
+    if klass.kind_of?(String)
       constant = nil
-        klass.split('::').each do |m|
+      klass.split('::').each do |m|
         constant = constant ? constant.const_get(m) : Module.const_get(m)
       end
+      constant
     else
-      m
+      klass
     end
   end
 end
