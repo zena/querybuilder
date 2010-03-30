@@ -94,10 +94,10 @@ class DummyProcessor < QueryBuilder::Processor
       case relation
       when 'letters'
         add_table(main_table)
-        add_filter "#{table}.kpath LIKE #{insert_bind("NNL%".inspect)}"
+        add_filter "#{table}.kpath LIKE #{quote('NNL%')}"
       when 'clients'
         add_table(main_table)
-        add_filter "#{table}.kpath LIKE #{insert_bind("NRCC%".inspect)}"
+        add_filter "#{table}.kpath LIKE #{quote("NRCC%")}"
       when main_table, 'children'
         # no filter
         add_table(main_table)
@@ -135,6 +135,9 @@ end
 
 
 class DummyClass
+  # Mock connection and quoting
   def self.connection; self; end
-  def self.quote(obj); "[[#{obj}]]"; end
+  def self.quote(obj)
+    obj.kind_of?(String) ? "'#{obj}'" : obj
+  end
 end

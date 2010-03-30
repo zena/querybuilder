@@ -45,7 +45,7 @@ module QueryBuilder
     # => "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
     def to_s(type = :find)
       statement, bind_values = build_statement(type)
-      bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
+      bind_values.empty? ? "%Q{#{statement}}" : "[#{[["%Q{#{statement}}"] + bind_values].join(', ')}]"
     end
 
     # Convert the query object into an SQL query.
@@ -213,7 +213,7 @@ module QueryBuilder
       end
 
       def get_connection(bindings)
-        eval "#{main_class}.connection", bindings
+        eval("#{main_class}.connection", bindings)
       end
 
       # Adapted from Rail's ActiveRecord code. We need "eval" because

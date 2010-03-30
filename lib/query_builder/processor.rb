@@ -612,5 +612,13 @@ module QueryBuilder
       def add_filter(*args)
         @query.add_filter(*args)
       end
+
+      def quote(arg)
+        connection.quote(arg)
+      end
+
+      def connection
+        @connection ||= eval("#{@query.main_class}.connection", nil, __FILE__, __LINE__)
+      end
   end
 end

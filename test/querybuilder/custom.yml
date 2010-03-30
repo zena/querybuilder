@@ -4,19 +4,19 @@ it_should_be_available:
   context:
     custom_query_group: test
   src: "abc"
-  res: "\"SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC\""
+  res: "%Q{SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC}"
 
 it_should_be_customizable:
   context:
     custom_query_group: test
   src: "foo where name < 50"
-  res: "\"SELECT foo FROM objects WHERE objects.name < 50 ORDER BY f DESC\""
+  res: "%Q{SELECT foo FROM objects WHERE objects.name < 50 ORDER BY f DESC}"
 
 it_should_be_customizable_with_select_attributes:
   context:
     custom_query_group: test
   src: "abc where number < 50"
-  res: "\"SELECT a,34 AS number,c FROM test WHERE (34) < 50 AND 3 AND 2 AND 1 ORDER BY a ASC\""
+  res: "%Q{SELECT a,34 AS number,c FROM test WHERE (34) < 50 AND 3 AND 2 AND 1 ORDER BY a ASC}"
 
 it_should_not_find_queries_not_in_group:
   context:
@@ -35,19 +35,19 @@ it_should_find_queries_in_group_list:
   context:
     custom_query_group: test2
   src: "bar"
-  res: "\"SELECT bar FROM bart\""
+  res: "%Q{SELECT bar FROM bart}"
 
 it_should_not_use_the_first_table_as_main:
   context:
     custom_query_group: test
   src: "two_table where x = '4' and name like 'B%'"
-  res: "[\"SELECT x AS x,IF(table_one.y,table_one.y,table_two.z) AS y,table_two.name FROM table_one,table_two WHERE (x) = ? AND table_one.name LIKE ?\", \"4\", \"B%\"]"
+  res: "[%Q{SELECT x AS x,IF(table_one.y,table_one.y,table_two.z) AS y,table_two.name FROM table_one,table_two WHERE (x) = ? AND table_one.name LIKE ?}, \"4\", \"B%\"]"
 
 it_should_use_main_table_as_main:
   context:
     custom_query_group: test
   src: "two_table_main where name = '4'"
-  res: "[\"SELECT x FROM foo,table_one,table_two WHERE foo.name = ?\", \"4\"]"
+  res: "[%Q{SELECT x FROM foo,table_one,table_two WHERE foo.name = ?}, \"4\"]"
 
 it_should_limit_the_entries:
   context:
@@ -59,4 +59,4 @@ it_should_paginate_the_entries:
   context:
     custom_query_group: test
   src: "abc limit 4 paginate foo"
-  res: "[\"SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC LIMIT 4 OFFSET ?\", ((foo.to_i > 0 ? foo.to_i : 1)-1)*4]"
+  res: "[%Q{SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC LIMIT 4 OFFSET ?}, ((foo.to_i > 0 ? foo.to_i : 1)-1)*4]"

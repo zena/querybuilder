@@ -28,11 +28,11 @@ class QueryTest < Test::Unit::TestCase
     end
 
     should 'return a string representing an array with find SQL and parameters string on to_s' do
-      assert_equal "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ?\", id]", subject.to_s
+      assert_equal "[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ?}, id]", subject.to_s
     end
 
     should 'return a string representing an array with count SQL and parameters string on to_s count' do
-      assert_equal "[\"SELECT COUNT(*) FROM objects WHERE objects.parent_id = ?\", id]", subject.to_s(:count)
+      assert_equal "[%Q{SELECT COUNT(*) FROM objects WHERE objects.parent_id = ?}, id]", subject.to_s(:count)
     end
   end
 end
