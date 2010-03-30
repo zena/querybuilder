@@ -1,8 +1,9 @@
 == 0.6.1
 
-* 1 major enhancement:
+* 3 major enhancements:
   * Fixed change class bugs.
   * A model can now include 'QueryBuilder' (better interface between class and compiler).
+  * Better defaults declaration.
 
 == 0.6.0 2010-03-19
 

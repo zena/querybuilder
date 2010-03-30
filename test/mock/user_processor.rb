@@ -2,22 +2,15 @@ class TestUser
 end
 
 class UserProcessor < QueryBuilder::Processor
-  self.main_table = 'users'
-  self.main_class = 'TestUser'
-  
-  # Default sort order
-  def default_order_clause
-    "name asc, first_name asc"
-  end
-  
-  def default_context_filter
-    'self'
-  end
-  
+  set_main_table 'users'
+  set_main_class 'TestUser'
+  set_default    :order,   'name asc, first_name asc'
+  set_default    :context, 'self'
+
   def process_relation(relation)
     case relation
-    when 'objects'  
-      this.apply_scope(default_scope) if context[:last]
+    when 'objects'
+      this.apply_scope(default[:scope]) if context[:last]
       add_table('objects')
       @query.add_filter "#{table('objects')}.id = #{field_or_attr('node_id')}"
       change_processor 'DummyProcessor'
@@ -25,7 +18,7 @@ class UserProcessor < QueryBuilder::Processor
       return nil
     end
   end
-  
+
   # Overwrite this and take car to check for valid fields.
   def process_field(field_name)
     if ['id', 'name', 'first_name', 'node_id'].include?(field_name)

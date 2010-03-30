@@ -8,6 +8,20 @@ module QueryBuilder
     class << self
       # class variable
       attr_accessor :main_table, :main_class, :custom_queries
+      attr_accessor :defaults
+
+      def set_main_table(table_name)
+        self.main_table = table_name
+      end
+
+      def set_main_class(klass)
+        self.main_class = klass
+      end
+
+      def set_default(key, value)
+        self.defaults ||= {}
+        self.defaults[key] = value
+      end
 
       # Load prepared SQL definitions from a set of directories. If the file does not contain "group" or "groups" keys,
       # the filename is used as group.
@@ -74,7 +88,6 @@ module QueryBuilder
       rescue NameError => err
         raise ArgumentError.new("Invalid Processor class (#{klass})")
       end
-
     end
 
     VERSION = '1.0.0'
@@ -122,6 +135,10 @@ module QueryBuilder
         @this = processor
       end
 
+      def default
+        self.class.defaults
+      end
+
       def process(sxp)
         return sxp if sxp.kind_of?(String)
         method = "process_#{OPERATOR_TO_METHOD[sxp.first] || sxp.first}"
@@ -157,8 +174,8 @@ module QueryBuilder
       # [letters from friends] or [images in project]
       def process_query(args)
         this.process(args)
-        if @query.order.nil? && this.default_order_clause
-          sxp = Parser.parse("foo order by #{this.default_order_clause}")
+        if @query.order.nil? && order = this.default[:order]
+          sxp = Parser.parse("foo order by #{order}")
           order = sxp[1]
           order[1] = [:void] # replace [:relation, "foo"] by [:void]
           this.process(order)
@@ -419,10 +436,6 @@ module QueryBuilder
         "[[#{str}]]"
       end
 
-      def default_order_clause
-        nil
-      end
-
       def with(hash)
         context_bak = @context
         res = ''
@@ -536,7 +549,7 @@ module QueryBuilder
             context[:scope_type] = nil
             # post scope
             @query.add_table(use_name, table_name, avoid_alias)
-            apply_scope(context[:scope] || default_scope)
+            apply_scope(context[:scope] || default[:scope])
           else
             # scope already applied / skip
             @query.add_table(use_name, table_name, avoid_alias)

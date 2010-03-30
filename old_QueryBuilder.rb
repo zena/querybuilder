@@ -862,7 +862,7 @@ class QueryBuilder
 
 
           @group = parse_group_clause(@offset_limit_order_group[:group])
-          @order = parse_order_clause(@offset_limit_order_group[:order] || default_order_clause)
+          @order = parse_order_clause(@offset_limit_order_group[:order] || default[:order]_clause)
         end
       end
 

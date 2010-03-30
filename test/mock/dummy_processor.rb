@@ -1,11 +1,9 @@
 class DummyProcessor < QueryBuilder::Processor
-  self.main_table = 'objects'
-  self.main_class = 'DummyClass'
-  self.load_custom_queries File.join(File.dirname(__FILE__), '*')
+  set_main_table 'objects'
+  set_main_class 'DummyClass'
+  set_default :scope, 'self'
 
-  def default_scope
-    'self'
-  end
+  load_custom_queries File.join(File.dirname(__FILE__), '*')
 
   # Scope current context with previous context.
   # For example:
