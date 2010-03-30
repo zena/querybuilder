@@ -59,3 +59,27 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
+
+desc "Rebuild sources files from ragel parser definitions"
+task :ragel do
+  [
+    "cd lib && ragel querybuilder_ext.rl   -o querybuilder_ext.c",
+    "cd lib && ragel querybuilder_rb.rl -R -o querybuilder_rb.rb",
+  ].each do |cmd|
+    puts cmd
+    system cmd
+  end
+end
+
+desc "Build native extensions"
+task :build => :ragel do
+  [
+    "ruby lib/extconf.rb",
+    "cd lib && make",
+  ].each do |cmd|
+    puts cmd
+    system cmd
+  end
+end
+
+

@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Gaspard Bucher"]
-  s.date = %q{2010-03-19}
+  s.date = %q{2010-03-30}
   s.description = %q{QueryBuilder is an interpreter for the "pseudo sql" language. This language
     can be used for two purposes:
 
@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
      "Rakefile",
      "lib/extconf.rb",
      "lib/query_builder.rb",
+     "lib/query_builder/error.rb",
      "lib/query_builder/info.rb",
      "lib/query_builder/parser.rb",
      "lib/query_builder/processor.rb",
@@ -43,7 +44,9 @@ Gem::Specification.new do |s|
      "script/destroy",
      "script/generate",
      "tasks/build.rake",
+     "test/dummy_test.rb",
      "test/mock/custom_queries/test.yml",
+     "test/mock/dummy.rb",
      "test/mock/dummy_processor.rb",
      "test/mock/dummy_query.rb",
      "test/mock/queries/bar.yml",
@@ -67,7 +70,9 @@ Gem::Specification.new do |s|
   s.rubygems_version = %q{1.3.6}
   s.summary = %q{QueryBuilder is an interpreter for the "pseudo sql" language.}
   s.test_files = [
-    "test/mock/dummy_processor.rb",
+    "test/dummy_test.rb",
+     "test/mock/dummy.rb",
+     "test/mock/dummy_processor.rb",
      "test/mock/dummy_query.rb",
      "test/mock/user_processor.rb",
      "test/mock/user_query.rb",

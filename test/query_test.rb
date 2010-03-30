@@ -1,20 +1,38 @@
-require File.dirname(__FILE__) + '/test_helper.rb'
+require 'test_helper'
 
-class DummyQueryBuilder < Test::Unit::TestCase
-  
-  def test_rebuild_tables
-    query = QueryBuilder::Query.new(QueryBuilder::Processor)
-    query.tables = ['foo', 'bar']
-    query.rebuild_tables!
-    h = {'foo' => ['foo'], 'bar' => ['bar']}
-    assert_equal h, query.table_alias
+class QueryTest < Test::Unit::TestCase
+
+  context 'An empty query object' do
+    subject do
+      QueryBuilder::Query.new(QueryBuilder::Processor)
+    end
+
+    should 'respond to rebuild_tables' do
+      subject.tables = ['foo', 'bar']
+      subject.rebuild_tables!
+      h = {'foo' => ['foo'], 'bar' => ['bar']}
+      assert_equal h, subject.table_alias
+    end
+
+    should 'respond to rebuild_attributes_hash' do
+      subject.select = ['1 as one', 'two', '(20 - (weight / (height * height))) AS bmi_nrm']
+      subject.rebuild_attributes_hash!
+      h = {"bmi_nrm"=>"(20 - (weight / (height * height)))"}
+      assert_equal h, subject.attributes_alias
+    end
   end
-  
-  def test_rebuild_attributes_hash
-    query = QueryBuilder::Query.new(QueryBuilder::Processor)
-    query.select = ['1 as one', 'two', '(20 - (weight / (height * height))) AS bmi_nrm']
-    query.rebuild_attributes_hash!
-    h = {"bmi_nrm"=>"(20 - (weight / (height * height)))"}
-    assert_equal h, query.attributes_alias
+
+  context 'A query returned from a processor' do
+    subject do
+      DummyProcessor.new('objects').query
+    end
+
+    should 'return a string representing an array with find SQL and parameters string on to_s' do
+      assert_equal "[\"SELECT objects.* FROM objects WHERE objects.parent_id = ?\", id]", subject.to_s
+    end
+
+    should 'return a string representing an array with count SQL and parameters string on to_s count' do
+      assert_equal "[\"SELECT COUNT(*) FROM objects WHERE objects.parent_id = ?\", id]", subject.to_s(:count)
+    end
   end
 end

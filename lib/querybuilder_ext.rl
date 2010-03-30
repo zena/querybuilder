@@ -2,7 +2,7 @@
 
 static VALUE rb_QueryBuilder   = Qnil;
 static VALUE rb_Parser         = Qnil;
-static VALUE rb_QueryException = Qnil;
+static VALUE rb_SyntaxError    = Qnil;
 
 /* symbols */
 static VALUE _query;
@@ -48,7 +48,7 @@ void Init_querybuilder_ext() {
   rb_QueryBuilder = rb_define_module("QueryBuilder");
   rb_Parser = rb_define_class_under(rb_QueryBuilder, "Parser", rb_cObject);
 	rb_define_singleton_method(rb_Parser, "parse", rb_parse, 1);
-	
+
 	/* store symbols */
   STORE_SYM(query);
 	STORE_SYM(string);
@@ -75,15 +75,15 @@ void Init_querybuilder_ext() {
   STORE_SYM(clause_par_close);
   STORE_SYM(par);
   STORE_SYM(par_close);
-  
+
   /* methods */
   _insert    = rb_intern("insert");
   _apply_op  = rb_intern("apply_op");
   _downcase  = rb_intern("downcase");
   _pop_stack = rb_intern("pop_stack");
-  
+
   /* classes */
-  rb_QueryException = rb_const_get(rb_QueryBuilder, rb_intern("QueryException"));
+  rb_SyntaxError = rb_const_get(rb_QueryBuilder, rb_intern("SyntaxError"));
 }
 
 /* macro */
@@ -108,12 +108,12 @@ void Init_querybuilder_ext() {
     SET_TMP_ARY(_string);
     rb_ary_push(last, tmp);
   }
-  
+
   action dstring {
     SET_TMP_ARY(_dstring);
     rb_ary_push(last, tmp);
   }
-  
+
   action rubyless {
     SET_TMP_ARY(_rubyless);
     rb_ary_push(last, tmp);
@@ -320,8 +320,8 @@ void Init_querybuilder_ext() {
   action error {
     p = p - 3;
     if (p < data) p = data;
-    // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.")
-    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+    // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
+    rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
 
   action debug {
@@ -349,36 +349,36 @@ VALUE rb_parse(VALUE self, VALUE arg) {
     // data = "#{arg}\n"
     tmp = rb_str_plus(arg, rb_str_new2("\n"));
   } else {
-    rb_raise(rb_QueryException, "Bad element type: Parser only accepts strings.");
+    rb_raise(rb_SyntaxError, "Bad element type: Parser only accepts strings.");
   }
   const char * data = RSTRING_PTR(tmp);
-  
+
   int cs;
   const char * p     = data;
   const char * pe    = data + RSTRING_LEN(tmp);
   const char * eof   = pe;
   const char * str_a = NULL;
-   
+
   // last  = [:query]
   last  = rb_ary_new();
   rb_ary_push(last, _query);
   // stack = [last]
   stack = rb_ary_new();
   rb_ary_push(stack, last);
-  
+
   /* clause_state = :relation */
   int clause_state = CLAUSE_RELATION;
-  
-  
+
+
   %% write init;
   %% write exec;
-  
-  // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
+
+  // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
   if (p < pe) {
     p = p - 3;
     if (p < data) p = data;
-    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+    rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
-  
+
   return rb_ary_entry(stack, 0);
 }

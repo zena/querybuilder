@@ -10,23 +10,39 @@ class DummyQueryBuilder < Test::Unit::TestCase
   safe_method :params => {:class => StringHash, :method => 'get_params'}
   safe_method_for StringHash, [:[], Symbol] => String
   safe_method_for StringHash, [:[], String] => String
-  
+
   def id;         123;  end
   def parent_id;  333;  end
   def project_id; 9999; end
   def connection; self; end
-  
-  
+
+  context 'A query processor' do
+    subject do
+      DummyProcessor
+    end
+
+    should 'raise a QueryBuilder::SyntaxError on syntax errors' do
+      assert_raise(QueryBuilder::SyntaxError) do
+        subject.new('this is a bad source')
+      end
+    end
+
+    should 'return a query object on query' do
+      assert_kind_of QueryBuilder::Query, subject.new('objects').query
+    end
+  end
+
+
   def yt_parse(key, source, opts)
     opts = {:rubyless_helper => self}.merge(Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)])
-    
+
     case key
     when 'res'
-      
+
       begin
         query = DummyProcessor.new(source, opts).query
         (query.main_class != DummyClass ? "#{query.main_class}: " : '') + query.to_s
-      rescue QueryBuilder::QueryException => err
+      rescue QueryBuilder::Error => err
         err.message
       end
     when 'sxp'
@@ -52,7 +68,7 @@ class DummyQueryBuilder < Test::Unit::TestCase
             100.times do
               begin
                 QueryBuilder::Parser.parse(src)
-              rescue QueryBuilder::QueryException => err
+              rescue QueryBuilder::Error => err
                 #
               end
             end

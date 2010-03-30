@@ -1,6 +1,7 @@
 .*
 *.gem
 lib/Makefile
+Makefile
 lib/*.o
 lib/*.bundle
 lib/*.so

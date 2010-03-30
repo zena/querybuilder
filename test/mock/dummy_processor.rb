@@ -45,7 +45,7 @@ class DummyProcessor < QueryBuilder::Processor
       when 'Client'
         kpath = 'NRCC'
       else
-        raise QueryBuilder::QueryException.new("Unknown class #{right.last.inspect}.")
+        raise QueryBuilder::SyntaxError.new("Unknown class #{right.last.inspect}.")
       end
       "#{field_or_attr('kpath')} LIKE #{insert_bind((kpath + '%').inspect)}"
     else

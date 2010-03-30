@@ -1,9 +1,10 @@
+
 #line 1 "querybuilder_ext.rl"
 #include <ruby.h>
 
 static VALUE rb_QueryBuilder   = Qnil;
 static VALUE rb_Parser         = Qnil;
-static VALUE rb_QueryException = Qnil;
+static VALUE rb_SyntaxError    = Qnil;
 
 /* symbols */
 static VALUE _query;
@@ -49,7 +50,7 @@ void Init_querybuilder_ext() {
   rb_QueryBuilder = rb_define_module("QueryBuilder");
   rb_Parser = rb_define_class_under(rb_QueryBuilder, "Parser", rb_cObject);
 	rb_define_singleton_method(rb_Parser, "parse", rb_parse, 1);
-	
+
 	/* store symbols */
   STORE_SYM(query);
 	STORE_SYM(string);
@@ -76,15 +77,15 @@ void Init_querybuilder_ext() {
   STORE_SYM(clause_par_close);
   STORE_SYM(par);
   STORE_SYM(par_close);
-  
+
   /* methods */
   _insert    = rb_intern("insert");
   _apply_op  = rb_intern("apply_op");
   _downcase  = rb_intern("downcase");
   _pop_stack = rb_intern("pop_stack");
-  
+
   /* classes */
-  rb_QueryException = rb_const_get(rb_QueryBuilder, rb_intern("QueryException"));
+  rb_SyntaxError = rb_const_get(rb_QueryBuilder, rb_intern("SyntaxError"));
 }
 
 /* macro */
@@ -98,11 +99,12 @@ void Init_querybuilder_ext() {
 
 #define APPLY_OP(elem) last = rb_funcall(self, _apply_op, 2, stack, elem);
 
+
 #line 332 "querybuilder_ext.rl"
 
 
 
-#line 106 "querybuilder_ext.c"
+#line 108 "querybuilder_ext.c"
 static const char _querybuilder_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1, 
 	3, 1, 4, 1, 5, 1, 6, 1, 
@@ -1144,6 +1146,7 @@ static const int querybuilder_en_expr_p = 299;
 static const int querybuilder_en_clause_p = 360;
 static const int querybuilder_en_main = 1;
 
+
 #line 335 "querybuilder_ext.rl"
 
 #define CLAUSE_RELATION    1
@@ -1162,35 +1165,36 @@ VALUE rb_parse(VALUE self, VALUE arg) {
     // data = "#{arg}\n"
     tmp = rb_str_plus(arg, rb_str_new2("\n"));
   } else {
-    rb_raise(rb_QueryException, "Bad element type: Parser only accepts strings.");
+    rb_raise(rb_SyntaxError, "Bad element type: Parser only accepts strings.");
   }
   const char * data = RSTRING_PTR(tmp);
-  
+
   int cs;
   const char * p     = data;
   const char * pe    = data + RSTRING_LEN(tmp);
   const char * eof   = pe;
   const char * str_a = NULL;
-   
+
   // last  = [:query]
   last  = rb_ary_new();
   rb_ary_push(last, _query);
   // stack = [last]
   stack = rb_ary_new();
   rb_ary_push(stack, last);
-  
+
   /* clause_state = :relation */
   int clause_state = CLAUSE_RELATION;
+
+
   
-  
-  
-#line 1188 "querybuilder_ext.c"
+#line 1191 "querybuilder_ext.c"
 	{
 	cs = querybuilder_start;
 	}
+
 #line 374 "querybuilder_ext.rl"
   
-#line 1194 "querybuilder_ext.c"
+#line 1198 "querybuilder_ext.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -1527,11 +1531,11 @@ _match:
 	{
     p = p - 3;
     if (p < data) p = data;
-    // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.")
-    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+    // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
+    rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
 	break;
-#line 1535 "querybuilder_ext.c"
+#line 1539 "querybuilder_ext.c"
 		}
 	}
 
@@ -1552,25 +1556,26 @@ _again:
 	{
     p = p - 3;
     if (p < data) p = data;
-    // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.")
-    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+    // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
+    rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
 	break;
-#line 1560 "querybuilder_ext.c"
+#line 1564 "querybuilder_ext.c"
 		}
 	}
 	}
 
 	_out: {}
 	}
+
 #line 375 "querybuilder_ext.rl"
-  
-  // raise QueryException.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
+
+  // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
   if (p < pe) {
     p = p - 3;
     if (p < data) p = data;
-    rb_raise(rb_QueryException, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+    rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
-  
+
   return rb_ary_entry(stack, 0);
 }

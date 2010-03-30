@@ -54,6 +54,7 @@ module QueryBuilder
               definitions.each do |klass,v|
                 begin
                   klass = QueryBuilder.resolve_const(klass)
+                  klass = klass.query_compiler if klass.respond_to?(:query_compiler)
                   raise ArgumentError.new("Invalid Processor class '#{klass}' in '#{file}' custom query. Should be a descendant of QueryBuilder::Processor.") unless klass.ancestors.include?(Processor)
                 rescue NameError
                   raise ArgumentError.new("Unknown Processor class '#{klass}' in '#{file}' custom query.")
@@ -129,7 +130,7 @@ module QueryBuilder
         elsif sxp.size == 3
           this.process_op(*sxp)
         else
-          raise QueryException.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
+          raise QueryBuilder::SyntaxError.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
         end
       end
 
@@ -221,7 +222,7 @@ module QueryBuilder
         elsif (context[:scope_type] = :context) && context_relation(relation)
         elsif (context[:scope_type] = :filter)  && filter_relation(relation)
         else
-          raise QueryException.new("Unknown relation '#{relation}'.")
+          raise QueryBuilder::SyntaxError.new("Unknown relation '#{relation}'.")
         end
       end
 
@@ -256,7 +257,7 @@ module QueryBuilder
         if fields = scope_fields(scope)
           add_filter("#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}") if fields != []
         else
-          raise QueryException.new("Invalid scope '#{scope}'.")
+          raise QueryBuilder::SyntaxError.new("Invalid scope '#{scope}'.")
         end
         true
       end
@@ -276,7 +277,7 @@ module QueryBuilder
           # use custom query alias value defined in select clause: 'custom_a AS validation'
           context[:processing] == :filter ? "(#{fld})" : fld
         else
-          raise QueryException.new("Unknown field '#{fld_name}'.")
+          raise QueryBuilder::SyntaxError.new("Unknown field '#{fld_name}'.")
         end
       end
 
@@ -303,13 +304,13 @@ module QueryBuilder
       end
 
       def process_dstring(string)
-        raise QueryException.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
+        raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
         insert_bind(RubyLess.translate("\"#{string}\"", helper))
       end
 
       def process_rubyless(string)
         # compile RubyLess...
-        raise QueryException.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
+        raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
         insert_bind(RubyLess.translate(string, helper))
       end
 
@@ -366,21 +367,21 @@ module QueryBuilder
 
       def process_offset(query, offset)
         process(query)
-        raise QueryException.new("Invalid offset (used without limit).") unless @query.limit
+        raise QueryBuilder::SyntaxError.new("Invalid offset (used without limit).") unless @query.limit
         context[:processing] = :limit
         @query.offset = " OFFSET #{process(offset)}"
       end
 
       def process_paginate(query, paginate_fld)
         process(query)
-        raise QueryException.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
+        raise QueryBuilder::SyntaxError.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
         context[:processing] = :paginate
         fld = process(paginate_fld)
         if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])
           @query.page_size = [2, page_size.to_i].max
           @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
         else
-          raise QueryException.new("Invalid paginate clause '#{paginate}'.")
+          raise QueryBuilder::SyntaxError.new("Invalid paginate clause '#{paginate}'.")
         end
       end
 
@@ -444,12 +445,18 @@ module QueryBuilder
         if @this
           @this.change_processor(processor)
         else
-          if processor.kind_of?(Processor)
-          elsif processor.kind_of?(String)
+          if processor.kind_of?(String)
             processor = QueryBuilder.resolve_const(processor)
-          else
-            processor = processor.new(this)
           end
+
+          if processor.kind_of?(Processor)
+            # instance of processor
+          elsif processor.ancestors.include?(Processor)
+            processor = processor.new(this)
+          else
+            raise QueryBuilder::SyntaxError.new("Cannot use #{processor} as Query compiler (not a QueryBuilder::Processor).")
+          end
+
           @query.processor_class = processor.class
           update_processor(processor)
         end
