@@ -13,7 +13,7 @@ objects_in_project:
 
 objects_in_site:
   res: "\"SELECT objects.* FROM objects\""
-  
+
 recipients:
   sxp: '[:query, [:relation, "recipients"]]'
   res: "[\"SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?\", id]"
@@ -44,7 +44,7 @@ limit:
   src: "objects in project limit 2"
   sxp: '[:query, [:limit, [:scope, [:relation, "objects"], "project"], [:integer, "2"]]]'
   res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2\", project_id]"
-  
+
 offset_in_limit:
   src: "objects in project limit 3,2"
   res: "[\"SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2 OFFSET 3\", project_id]"
@@ -77,3 +77,9 @@ or_clause_with_filter:
 count_sql:
   src: "objects in project"
   count: "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
+
+after_process_callback:
+  context:
+    after_filter: '(1 = 1)'
+  src: "objects where name like 'a%' or name like 'b%' in site"
+  res: "[\"SELECT objects.* FROM objects WHERE (1 = 1) AND (objects.name LIKE ? OR objects.name LIKE ?)\", \"a%\", \"b%\"]"

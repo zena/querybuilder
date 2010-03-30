@@ -8,6 +8,8 @@ class DummyQueryBuilder < Test::Unit::TestCase
   yamltest
   include RubyLess::SafeClass
   safe_method :params => {:class => StringHash, :method => 'get_params'}
+  safe_method :id => Number, :parent_id => Number, :project_id => Number
+
   safe_method_for StringHash, [:[], Symbol] => String
   safe_method_for StringHash, [:[], String] => String
 

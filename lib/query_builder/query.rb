@@ -5,10 +5,10 @@ module QueryBuilder
       @processor_class = processor_class
       @tables = []
       @table_alias = {}
-      @join_tables   = {}
+      @join_tables = {}
       @needed_join_tables = {}
       @attributes_alias   = {}
-      @where   = []
+      @where = []
     end
 
     def main_table

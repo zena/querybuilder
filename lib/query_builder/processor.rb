@@ -9,6 +9,7 @@ module QueryBuilder
       # class variable
       attr_accessor :main_table, :main_class, :custom_queries
       attr_accessor :defaults
+      attr_accessor :before_process_callbacks, :after_process_callbacks
 
       def set_main_table(table_name)
         self.main_table = table_name
@@ -21,6 +22,14 @@ module QueryBuilder
       def set_default(key, value)
         self.defaults ||= {}
         self.defaults[key] = value
+      end
+
+      def before_process(callback)
+        (self.before_process_callbacks ||= []) << callback
+      end
+
+      def after_process(callback)
+        (self.after_process_callbacks ||= []) << callback
       end
 
       # Load prepared SQL definitions from a set of directories. If the file does not contain "group" or "groups" keys,
@@ -122,11 +131,38 @@ module QueryBuilder
         @sxp = Parser.parse(source)
         @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
-        @sxp == [:query] ? process([:query, [:relation, main_table]]) : process(@sxp)
+
+        before_process
+
+        process_all
+
+        after_process
+
       end
     end
 
     protected
+      def before_process
+        (self.class.before_process_callbacks || []).each do |callback|
+          send(callback)
+        end
+      end
+
+      def process_all
+        if @sxp == [:query]
+          # empty query
+          process([:query, [:relation, main_table]])
+        else
+          process(@sxp)
+        end
+      end
+
+      def after_process
+        (self.class.after_process_callbacks || []).each do |callback|
+          send(callback)
+        end
+      end
+
       def this
         @this || self
       end
@@ -303,7 +339,11 @@ module QueryBuilder
       end
 
       def process_attr(fld_name)
-        insert_bind(fld_name)
+        if @rubyless_helper
+          insert_bind(RubyLess.translate(fld_name, @rubyless_helper))
+        else
+          insert_bind(fld_name)
+        end
       end
 
       def process_filter(relation, filter)

@@ -2,7 +2,7 @@ class DummyProcessor < QueryBuilder::Processor
   set_main_table 'objects'
   set_main_class 'DummyClass'
   set_default :scope, 'self'
-
+  after_process :insert_after_filter
   load_custom_queries File.join(File.dirname(__FILE__), '*')
 
   # Scope current context with previous context.
@@ -126,6 +126,11 @@ class DummyProcessor < QueryBuilder::Processor
       add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]} AND #{table('links')}.relation_id = #{fields[1]} AND #{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
     end
 
+    def insert_after_filter
+      if after_filter = context[:after_filter]
+        add_filter after_filter
+      end
+    end
 end
 
 
