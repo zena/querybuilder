@@ -82,4 +82,3 @@ task :build => :ragel do
   end
 end
 
-
