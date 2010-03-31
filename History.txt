@@ -7,6 +7,7 @@
   * Added before_process and after_process hooks.
   * Using %Q{} to render dynamic string.
   * Added 'match' operator.
+  * Added functions with dot syntax.
 
 == 0.6.0 2010-03-19
 

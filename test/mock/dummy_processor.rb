@@ -56,6 +56,16 @@ class DummyProcessor < QueryBuilder::Processor
   def process_match(left, right)
   end
 
+  def process_function(arg, method)
+    method, arg = process(method), process(arg)
+
+    case method
+    when 'year'
+      "strftime('%Y',#{arg})"
+    else
+      super
+    end
+  end
 
   # ******** And maybe overwrite these **********
   def parse_custom_query_argument(key, value)

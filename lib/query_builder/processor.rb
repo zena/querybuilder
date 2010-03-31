@@ -345,6 +345,11 @@ module QueryBuilder
         value
       end
 
+      # Used by SQL functions
+      def process_method(fld_name)
+        fld_name
+      end
+
       def process_attr(fld_name)
         if @rubyless_helper
           insert_bind(RubyLess.translate(fld_name, @rubyless_helper))
@@ -464,6 +469,10 @@ module QueryBuilder
 
       def process_desc(field)
         "#{process(field)} DESC"
+      end
+
+      def process_function(arg, method)
+        raise QueryBuilder::SyntaxError.new("SQL function '#{process(method)}' not allowed.")
       end
 
       # ******** And maybe overwrite these **********

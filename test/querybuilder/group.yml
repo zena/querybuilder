@@ -1,0 +1,7 @@
+group_by_function:
+  src: "objects in site group by event_at.year"
+  res: "%Q{SELECT objects.* FROM objects GROUP BY strftime('%Y',objects.event_at)}"
+
+group_and_order:
+  src: "objects in site group by event_at.year order by event_at asc"
+  res: "%Q{SELECT objects.* FROM objects GROUP BY strftime('%Y',objects.event_at) ORDER BY objects.event_at ASC}"

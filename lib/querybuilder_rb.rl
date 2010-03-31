@@ -37,6 +37,16 @@ module QueryBuilder
       str_buf = ""
     }
 
+    action method {
+      last << [:method, str_buf]
+      str_buf = ""
+    }
+
+    action function {
+      last = apply_op(stack, :function)
+      str_buf = ""
+    }
+
     action direction {
       last = apply_op(stack, str_buf.downcase.to_sym, false)
       str_buf = ""

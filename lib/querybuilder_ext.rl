@@ -12,6 +12,8 @@ static VALUE _rubyless;
 static VALUE _integer;
 static VALUE _real;
 static VALUE _field;
+static VALUE _method;
+static VALUE _function;
 static VALUE _relation;
 static VALUE _interval;
 static VALUE _scope;
@@ -57,6 +59,8 @@ void Init_querybuilder_ext() {
   STORE_SYM(integer);
   STORE_SYM(real);
   STORE_SYM(field);
+  STORE_SYM(method);
+  STORE_SYM(function);
   STORE_SYM(relation);
   STORE_SYM(interval);
   STORE_SYM(scope);
@@ -132,6 +136,18 @@ void Init_querybuilder_ext() {
   action field {
     SET_TMP_ARY(_field);
     rb_ary_push(last, tmp);
+  }
+
+  action method {
+    SET_TMP_ARY(_method);
+    rb_ary_push(last, tmp);
+  }
+
+  action function {
+    // last = apply_op(stack, :function)
+    APPLY_OP(_function);
+    // str_buf = ""
+    str_a = NULL;
   }
 
   action direction {

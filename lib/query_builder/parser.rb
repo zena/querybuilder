@@ -3,6 +3,7 @@ module QueryBuilder
     class << self
       # http://dev.mysql.com/doc/refman/5.1/en/operator-precedence.html
       OP_PRECEDENCE = {
+        :function => 50,
         :interval => 40,
         :binary   => 39, :collate  => 39,
         :"!" => 38,
@@ -35,6 +36,8 @@ module QueryBuilder
       }
       # group < from < filter < relation < scope
 
+      # Transform the stack to wrap the last element with an operator:
+      # [a, b, c] ==> [a, b, [op, c, d]]
       def apply_op(stack, op, change_last = true)
         pop_stack(stack, op)
         last = stack.last
