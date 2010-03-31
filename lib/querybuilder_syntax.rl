@@ -1,6 +1,12 @@
 %%{
   machine querybuilder;
-  
+  # Pseudo sql syntax:
+  #
+  # 'RELATION [where CLAUSE] [in SCOPE]
+  #  [from SUB_QUERY] [limit num(,num)] [offset num] [paginate key] [order by ORDER_CLAUSE] [group by GROUP_CLAUSE]'
+  #
+  # The where CLAUSE can contain the following operators
+
   ws       = ' ' | '\t' | '\n';
   var      = ws* ([a-zA-Z_]+) $str_a;
   dquote   = ([^"\\] | '\n') $str_a | ('\\' (any | '\n') $str_a);
@@ -12,7 +18,7 @@
   integer  = ws* ('-'? digit+ ) $str_a %integer;
   number   = (real | integer);
   op       = ws* ('+' | '-' | '<' | '<=' | '=' | '>=' | '>') $str_a;
-  text_op  = ws+ (('or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt') $str_a | ('not' $str_a %operator ws+)? 'like' $str_a);
+  text_op  = ws+ (('or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt' | 'match') $str_a | ('not' $str_a %operator ws+)? 'like' $str_a);
   operator = (op %operator | text_op %operator ws+);
   interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a %interval 's'?;
   value    = ((var %field | string | number | rubyless) interval? | ws* '(' >goto_expr_p ws* ')');

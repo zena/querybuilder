@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Gaspard Bucher"]
-  s.date = %q{2010-03-30}
+  s.date = %q{2010-03-31}
   s.description = %q{QueryBuilder is an interpreter for the "pseudo sql" language. This language
     can be used for two purposes:
 
@@ -48,11 +48,9 @@ Gem::Specification.new do |s|
      "test/mock/custom_queries/test.yml",
      "test/mock/dummy.rb",
      "test/mock/dummy_processor.rb",
-     "test/mock/dummy_query.rb",
      "test/mock/queries/bar.yml",
      "test/mock/queries/foo.yml",
      "test/mock/user_processor.rb",
-     "test/mock/user_query.rb",
      "test/query_test.rb",
      "test/querybuilder/basic.yml",
      "test/querybuilder/custom.yml",
@@ -73,9 +71,7 @@ Gem::Specification.new do |s|
     "test/dummy_test.rb",
      "test/mock/dummy.rb",
      "test/mock/dummy_processor.rb",
-     "test/mock/dummy_query.rb",
      "test/mock/user_processor.rb",
-     "test/mock/user_query.rb",
      "test/query_test.rb",
      "test/querybuilder_test.rb",
      "test/test_helper.rb"
@@ -86,16 +82,16 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<rubyless>, [">= 0.4.0"])
+      s.add_runtime_dependency(%q<rubyless>, [">= 0.5.0"])
       s.add_development_dependency(%q<shoulda>, [">= 0"])
       s.add_development_dependency(%q<yamltest>, [">= 0.5.0"])
     else
-      s.add_dependency(%q<rubyless>, [">= 0.4.0"])
+      s.add_dependency(%q<rubyless>, [">= 0.5.0"])
       s.add_dependency(%q<shoulda>, [">= 0"])
       s.add_dependency(%q<yamltest>, [">= 0.5.0"])
     end
   else
-    s.add_dependency(%q<rubyless>, [">= 0.4.0"])
+    s.add_dependency(%q<rubyless>, [">= 0.5.0"])
     s.add_dependency(%q<shoulda>, [">= 0"])
     s.add_dependency(%q<yamltest>, [">= 0.5.0"])
   end

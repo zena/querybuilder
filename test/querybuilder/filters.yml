@@ -44,6 +44,37 @@ equation_in_filter:
   sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at > now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
 
+equation_in_filter_using_gt:
+  src: "objects where event_at gt REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:gt, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at > now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
+
+equation_in_filter_using_ge:
+  src: "objects where event_at ge REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:ge, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at >= now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
+
+equation_in_filter_using_eq:
+  src: "objects where event_at eq REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:eq, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at = now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
+
+equation_in_filter_using_le:
+  src: "objects where event_at le REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:le, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at <= now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
+
+equation_in_filter_using_lt:
+  src: "objects where event_at lt REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:lt, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at < now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
+
+equation_in_filter_using_ne:
+  src: "objects where event_at ne REF_DATE + custom_a months"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:ne, [:field, "event_at"], [:+, [:field, "REF_DATE"], [:interval, [:field, "custom_a"], "month"]]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at <> now() + INTERVAL objects.custom_a MONTH AND objects.parent_id = ?}, id]"
+
+
 equation_with_date_interval:
   src: "objects where event_at > '2006-04-01' + 6 week"
   sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:string, "2006-04-01"], [:interval, [:integer, "6"], "week"]]]]]'
@@ -58,3 +89,7 @@ equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5 "
   sxp: '[:query, [:filter, [:relation, "objects"], [:and, [:par, [:or, [:>, [:integer, "1"], [:integer, "2"]], [:>, [:integer, "2"], [:integer, "3"]]]], [:"=", [:integer, "4"], [:integer, "5"]]]]]'
 #  res: "[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ? AND (1 > 2 OR 2 > 3) AND 4 = 5}, id]"
+
+match:
+  src: "objects where fulltext match 'one'"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:match, [:field, "fulltext"], [:string, "one"]]]]'

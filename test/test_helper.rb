@@ -2,8 +2,8 @@ require 'pathname'
 $LOAD_PATH.unshift((Pathname(__FILE__).dirname +  '..' + 'lib').expand_path)
 require 'stringio'
 require 'test/unit'
-require 'querybuilder'
 require 'rubygems'
+require 'querybuilder'
 require 'shoulda'
 require 'yamltest'
 

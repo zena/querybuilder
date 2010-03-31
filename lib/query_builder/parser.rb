@@ -14,7 +14,7 @@ module QueryBuilder
         :"&" => 32,
         :"|" => 31,
         :"=" => 30, :"<=>" => 30, :">=" => 30, :">" => 30, :"<=" => 30, :"<" => 30, :"<>" => 30, :"!=" => 30, :is => 30, :like => 30, :regexp => 30, :in => 30,
-        :lt => 30, :le => 30, :eq => 30, :ne => 30, :ge => 30, :gt => 30,
+        :lt => 30, :le => 30, :eq => 30, :ne => 30, :ge => 30, :gt => 30, :match => 30,
         :between => 29, :case => 29, :when => 29, :then => 29, :else => 29,
         :not => 28,
         :"&&" => 27, :and => 27,
@@ -34,7 +34,7 @@ module QueryBuilder
         :par => -1, :clause_par => -1
       }
       # group < from < filter < relation < scope
-  
+
       def apply_op(stack, op, change_last = true)
         pop_stack(stack, op)
         last = stack.last
@@ -45,7 +45,7 @@ module QueryBuilder
         end
         stack.last
       end
-  
+
       def insert(stack, arg)
         # insert [:relation, "..."]
         # stack: [[:query]]  --> [[:query, [:relation, "..."]], [:relation, "..."]]
@@ -55,7 +55,7 @@ module QueryBuilder
         stack.push last.last
         stack.last
       end
-  
+
       def pop_stack(stack, op)
         # debug_stack(stack, op)
         stack_op = stack.last.first
@@ -64,7 +64,7 @@ module QueryBuilder
           stack_op = stack.last.first
         end
       end
-  
+
       def debug_stack(stack, msg = '')
         puts "======= #{msg} ======="
         stack.reverse_each do |s|

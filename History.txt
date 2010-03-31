@@ -1,11 +1,12 @@
-== 0.6.1
+== 0.7.0
 
-* 5 major enhancements:
+* 6 major enhancements:
   * Fixed change class bugs.
   * A model can now include 'QueryBuilder' (better interface between class and compiler).
   * Better defaults declaration.
   * Added before_process and after_process hooks.
   * Using %Q{} to render dynamic string.
+  * Added 'match' operator.
 
 == 0.6.0 2010-03-19
 

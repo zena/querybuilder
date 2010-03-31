@@ -1,4 +1,3 @@
-require 'rubygems'
 require 'rubyless'
 
 module QueryBuilder
@@ -99,7 +98,6 @@ module QueryBuilder
       end
     end
 
-    VERSION = '1.0.0'
     OPERATOR_TO_METHOD = {
       :"!" => :not,
       :"@-" => :change_sign, :"@~" => :invert_bits,
@@ -110,12 +108,19 @@ module QueryBuilder
       :& => :bitwise_and,
       :| => :bitwise_or,
       :eq => :equal, :ge => :greater_or_equal,
-      :gt => :greater, :le => :smaller_or_equal, :lt => :smaller, :ne => :not_equal,
+      :gt => :greater, :le => :less_or_equal, :lt => :less, :ne => :not_equal,
       :"=" => :equal, :"<=>" => :null_safe_equal, :>= => :greater_or_equal,
-      :> => :greater, :<= => :smaller_or_equal, :< => :smaller, :"<>" => :not_equal, :"!=" => :not_equal,
+      :> => :greater, :<= => :less_or_equal, :< => :less, :"<>" => :not_equal, :"!=" => :not_equal,
       :"&&" => :and,
       :"||" => :or,
       :":=" => :assign
+    }
+
+    METHOD_TO_OPERATOR = {
+      :greater => :>, :greater_or_equal => :>=,
+      :equal   => :'=',
+      :less_or_equal => :<=, :less => :<,
+      :not_equal => :'<>'
     }
 
     def initialize(source, opts = {})
@@ -177,11 +182,13 @@ module QueryBuilder
 
       def process(sxp)
         return sxp if sxp.kind_of?(String)
-        method = "process_#{OPERATOR_TO_METHOD[sxp.first] || sxp.first}"
+        op = OPERATOR_TO_METHOD[sxp.first] || sxp.first
+        method = "process_#{op}"
         if this.respond_to?(method)
           this.send(method, *sxp[1..-1])
         elsif sxp.size == 3
-          this.process_op(*sxp)
+          op = METHOD_TO_OPERATOR[op] || sxp.first
+          this.process_op(*([op] + sxp[1..-1]))
         else
           raise QueryBuilder::SyntaxError.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
         end

@@ -36,13 +36,13 @@ module QueryBuilder
     #
     # ==== Examples
     # query.to_s
-    # => "[\"SELECT objects.* FROM objects WHERE objects.project_id = ?\", project_id]"
+    # => "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ?}, project_id]"
     #
     # DummyQuery.new("nodes in site").to_s
-    # => "\"SELECT objects.* FROM objects\""
+    # => "%Q{SELECT objects.* FROM objects}"
     #
     # query.to_s(:count)
-    # => "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
+    # => "[%Q{SELECT COUNT(*) FROM objects WHERE objects.project_id = ?}, project_id]"
     def to_s(type = :find)
       statement, bind_values = build_statement(type)
       bind_values.empty? ? "%Q{#{statement}}" : "[#{[["%Q{#{statement}}"] + bind_values].join(', ')}]"

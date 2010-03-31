@@ -26,7 +26,7 @@ class DummyProcessor < QueryBuilder::Processor
     end
   end
 
-  # Overwrite this and take car to check for valid fields.
+  # Overwrite this and take care to check for valid fields.
   def process_field(fld_name)
     if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a'].include?(fld_name)
       "#{table}.#{fld_name}"
@@ -37,6 +37,7 @@ class DummyProcessor < QueryBuilder::Processor
     end
   end
 
+  # We do special things with 'class ='
   def process_equal(left, right)
     if left == [:field, 'class'] && right[0] == :string
       case right.last
@@ -49,6 +50,10 @@ class DummyProcessor < QueryBuilder::Processor
     else
       super
     end
+  end
+
+  # We do special things with 'class ='
+  def process_match(left, right)
   end
 
 

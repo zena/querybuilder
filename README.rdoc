@@ -10,29 +10,83 @@ can be used for two purposes:
  1. protect your database from illegal SQL by securing queries
  2. ease writing complex relational queries by abstracting table internals
 
+QueryBuilder is just a parser that produces as AST tree and a default Processor to help you apply
+scopes, change classes, insert joins, etc. Compared to things like arel, QueryBuilder lets you build
+your own expressive language and let your end users safely play with it.
+
+Small comparison between native Rails, Arel and Pseudo SQL to display the portraits of the current
+user's friends:
+
+Rails:
+
+ Images.find(:all, :joins => "INNER JOIN people ON images.id = people.portrait_id INNER JOIN friends ON friends.target_id = people.id", :conditions => ["friends.source_id = ?", visitor.id])
+
+Arel:
+
+ Table(:images).join(people).on(images[:id].eq(people[:portrait_id])).join(friends).on(friends[:target_id].eq(people[:id])).where(friends[:source_id].eq(visitor.id))
+
+Pseudo SQL:
+
+ portraits from friends
+
+I am sure that I made not mistake in the 3 words of my pseudo-sql query (which just says what I think). The other two completely leak the underlying implementation and I could have made tons of syntax errors or security breaches...
+
+== PSEUDO SQL Syntax
+
+Everything in brackets is optional:
+
+ 'RELATION [where CLAUSE] [in SCOPE]
+  [from SUB_QUERY] [limit num(,num)] [offset num] [paginate key] [order by ORDER_CLAUSE] [group by GROUP_CLAUSE]'
+
+The where CLAUSE can contain the following operators (lt, gt, le, etc are the same as '<' and company but avoid escaping in
+xml/html environments):
+
+  '+' | '-' | '<' | '<=' | '=' | '>=' | '>'
+  'or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt'
+  'like' | 'not like' | 'match'
+
+This lets you build complex queries like:
+
+ images where tag = 'nature' in project from favorite_projects paginate p
+
+In the compiler, 'images' could be resolved as a filter on class type (filter_relation), "tag = 'nature'" as a
+special case in process_equal, 'project' as a scope and 'favorite_projects' as a join_relation.
+
+This might seem very complex, but usually, you start with a basic compiler and augment it when needs arise to
+build more powerful queries.
+
+A last note: if you insert <tt>#{something}</tt> (ruby dynamic string), it will be used as a bound variable evaluated
+using RubyLess. This is perfectly safe:
+
+ images where name like '#{params[:img]}%' in site limit 5
+
+And will be resolved as something like this:
+
+ Image.find_by_sql([%Q{SELECT images.* WHERE name LIKE ? LIMIT 5}%, "#{params[:img]}%"])
+
 == SYNOPSIS:
-  
-  # Create your own query class (DummyQuery) to parse your specific models (see test/mock).
-  
+
+  # Create your own query class (QueryDummy) to parse your specific models (see test/mock).
+
   # Compile a query:
   query = DummyQuery.new("images where name like '%flower%' from favorites")
-  
+
   # Get compilation result:
   query.to_s
   => "['SELECT ... FROM ... WHERE links.source_id = ?', @node.id]"
-    
+
   # Evaluate bind variables (produces executable SQL):
   query.sql(binding)
   => "SELECT ... FROM ... WHERE links.source_id = 1234"
-      
+
   # Compile to get count instead of records:
   query.to_s(:count)
   => "['SELECT COUNT(*) ... WHERE links.source_id = ?', @node.id]"
-  
+
   query.sql(binding, :count)
   => "SELECT COUNT(*) ... WHERE links.source_id = 1234"
-  
-  
+
+
 == REQUIREMENTS:
 
 * yamltest

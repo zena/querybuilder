@@ -134,16 +134,16 @@ class QueryBuilder
   #
   # ==== Examples
   # query.to_s
-  # => "[\"SELECT objects.* FROM objects WHERE objects.project_id = ?\", project_id]"
+  # => "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ?}, project_id]"
   #
   # DummyQuery.new("nodes in site").to_s
-  # => "\"SELECT objects.* FROM objects\""
+  # => "%Q{SELECT objects.* FROM objects}"
   #
   # query.to_s(:count)
-  # => "[\"SELECT COUNT(*) FROM objects WHERE objects.project_id = ?\", project_id]"
+  # => "[%Q{SELECT COUNT(*) FROM objects WHERE objects.project_id = ?}, project_id]"
   def to_s(type = :find)
     return nil if !valid?
-    return "\"SELECT #{main_table}.* FROM #{main_table} WHERE 0\"" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
+    return "%Q{SELECT #{main_table}.* FROM #{main_table} WHERE 0}" if @tables.empty? # all alternate queries invalid and 'ignore_warnings' set.
     statement, bind_values = build_statement(type)
     bind_values.empty? ? "\"#{statement}\"" : "[#{[["\"#{statement}\""] + bind_values].join(', ')}]"
   end
