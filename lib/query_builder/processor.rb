@@ -449,6 +449,7 @@ module QueryBuilder
         if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])
           @query.page_size = [2, page_size.to_i].max
           @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
+          @query.pagination_key = fld
         else
           raise QueryBuilder::SyntaxError.new("Invalid paginate clause '#{paginate}'.")
         end

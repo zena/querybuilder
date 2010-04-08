@@ -41,6 +41,6 @@
   part     = (relation filters? scope? | ws* '(' >goto_clause_p ws* ')');
   clause   = (part (ws+ 'from' %from_ part)* | '(' >goto_clause_p ws* ')' );
   clause_p:= clause ws* ')' $clause_close;
-  main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* limit? offset? paginate? group? order? ('\n' | ws)+ $err(error);
+  main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* group? order? limit? offset? paginate? ('\n' | ws)+ $err(error);
 
 }%%

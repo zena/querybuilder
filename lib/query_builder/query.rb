@@ -1,6 +1,8 @@
 module QueryBuilder
   class Query
-    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where, :limit, :offset, :page_size, :order, :group, :error, :attributes_alias
+    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
+                  :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
+                  :pagination_key
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []
