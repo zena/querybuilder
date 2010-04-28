@@ -33,6 +33,33 @@ class DummyQueryBuilder < Test::Unit::TestCase
       assert_kind_of QueryBuilder::Query, subject.new('objects').query
     end
   end
+  
+  context 'Including QueryBuilder' do
+    context 'in a class' do
+      subject do
+        Class.new do
+          include QueryBuilder
+        end
+      end
+    
+      should 'receive class method query_compiler' do
+        assert_nothing_raised do
+          subject.query_compiler = 'Foo'
+          assert_equal 'Foo', subject.query_compiler
+        end
+      end
+      
+      should 'receive class method query_compiler on sub_class' do
+        sub_class = Class.new(subject)
+        subject.query_compiler = 'Foo'
+        assert_equal 'Foo', subject.query_compiler
+        
+        sub_class.query_compiler = 'Bar'
+        assert_equal 'Bar', sub_class.query_compiler
+        assert_equal 'Foo', subject.query_compiler
+      end
+    end
+  end # Including QueryBuilder
 
 
   def yt_parse(key, source, opts)

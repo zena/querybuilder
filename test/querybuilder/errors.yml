@@ -3,9 +3,7 @@ bad_relation:
   res: "Unknown relation 'bolobolo'."
 
 bad_relation_in_alternate_query:
-  src: 
-    - "bolobolo"
-    - "letters in project"
+  src: "(bolobolo) or (letters in project)"
   res: "Unknown relation 'bolobolo'."
 
 order:
@@ -17,9 +15,7 @@ offset_without_limit:
   res: "Invalid offset (used without limit)."
 
 legacy_many_clauses:
-  src:
-    - 'letters'
-    - 'foo'
+  src: letters or foo
   res: "Unknown relation 'foo'."
 
 bad_equation:

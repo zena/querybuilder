@@ -8,6 +8,7 @@
   * Using %Q{} to render dynamic string.
   * Added 'match' operator.
   * Added functions with dot syntax.
+  * Added hook to deal with noop join scopes.
 
 == 0.6.0 2010-03-19
 

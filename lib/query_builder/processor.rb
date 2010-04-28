@@ -132,8 +132,9 @@ module QueryBuilder
         @query    = source.query
         @sxp      = source.sxp
         @ancestor = source # used during class change to return back to previous 'this'
-      else
+      elsif source.kind_of?(String)
         @sxp = Parser.parse(source)
+
         @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
 
@@ -142,7 +143,8 @@ module QueryBuilder
         process_all
 
         after_process
-
+      else
+        raise "Cannot use #{source.class} as source: expected a String or QueryBuilder::Processor"
       end
     end
 
@@ -335,7 +337,7 @@ module QueryBuilder
       def process_field(fld_name)
         if fld = @query.attributes_alias[fld_name]
           # use custom query alias value defined in select clause: 'custom_a AS validation'
-          context[:processing] == :filter ? "(#{fld})" : fld
+          processing_filter? ? "(#{fld})" : fld
         else
           raise QueryBuilder::SyntaxError.new("Unknown field '#{fld_name}'.")
         end
@@ -388,7 +390,6 @@ module QueryBuilder
       end
 
       def process_or(left, right)
-        left_clause = left.first
         "(#{this.process(left)} OR #{this.process(right)})"
       end
 
@@ -558,6 +559,21 @@ module QueryBuilder
       end
 
     private
+
+      %W{filter scope limit offset paginate group order}.each do |context|
+        # Return true if we are expanding a filter / scope / limit / etc
+        class_eval(%Q{
+          def processing_#{context}?
+            context[:processing] == :#{context}
+          end
+        }, __FILE__, __LINE__ - 2)
+      end
+
+      # Return true if we are expanding a filter
+      def processing_scope?
+        context[:processing] == :scope
+      end
+
       # Parse custom query arguments for special keywords (RELATION, NODE_ATTR, ETC)
       # There might be a better way to use custom queries that avoids this parsing
       def prepare_custom_query_arguments(key, value)
@@ -597,7 +613,7 @@ module QueryBuilder
           if context[:scope_type] == :join
             context[:scope_type] = nil
             # pre scope
-            if context[:scope]
+            if context[:scope] && need_join_scope?(context[:scope])
               @query.add_table(main_table, main_table, avoid_alias)
               apply_scope(context[:scope])
             end
@@ -618,6 +634,11 @@ module QueryBuilder
         end
       end
 
+      # Hook to use dummy scopes (such as 'in site')
+      def need_join_scope?(scope_name)
+        true
+      end
+
       def main_table
         @query.main_table
       end
@@ -628,6 +649,10 @@ module QueryBuilder
 
       def add_filter(*args)
         @query.add_filter(*args)
+      end
+
+      def add_select(*args)
+        @query.add_select(*args)
       end
 
       def quote(arg)

@@ -40,6 +40,10 @@ order_many_params:
   sxp: '[:query, [:order, [:scope, [:relation, "objects"], "project"], [:field, "name"], [:desc, [:field, "id"]]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name, objects.id DESC}, project_id]"
 
+order_without_scope:
+  src: "objects order by name asc"
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ? ORDER BY objects.name ASC}, id]"
+
 limit:
   src: "objects in project limit 2"
   sxp: '[:query, [:limit, [:scope, [:relation, "objects"], "project"], [:integer, "2"]]]'
@@ -60,14 +64,8 @@ paginate:
   res: "[%Q{SELECT objects.* FROM objects LIMIT 2 OFFSET ?}, ((p.to_i > 0 ? p.to_i : 1)-1)*2]"
 
 recipients_or_objects:
+  src: recipients or objects
   sxp: '[:query, [:clause_or, [:relation, "recipients"], [:relation, "objects"]]]'
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id}, id, id]"
-
-recipients_or_objects_legacy:
-  src:
-    - 'recipients'
-    - 'objects'
-  sxp: '[:query, [:clause_or, [:clause_par, [:relation, "recipients"]], [:clause_par, [:relation, "objects"]]]]'
   res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ?)) GROUP BY objects.id}, id, id]"
 
 or_clause_with_filter:

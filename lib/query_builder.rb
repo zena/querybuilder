@@ -15,11 +15,17 @@ module QueryBuilder
     base.extend ClassMethods
     class << base
       attr_accessor :query_compiler
+
+      # Inheritable accessor
+      def query_compiler
+        @query_compiler ||= (superclass.respond_to?(:query_compiler) ? superclass.query_compiler : nil)
+      end
     end
   end
 
   module ClassMethods
     def build_query(count, pseudo_sql, opts = {})
+      raise Exception.new("No query_compiler for #{self}") unless query_compiler
       if count == :first
         opts[:limit] = 1
       end
