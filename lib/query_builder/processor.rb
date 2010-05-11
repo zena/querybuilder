@@ -137,12 +137,15 @@ module QueryBuilder
 
         @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
-
         before_process
 
         process_all
 
         after_process
+
+        if limit = @opts[:limit]
+          @query.limit = " LIMIT #{limit}"
+        end
       else
         raise "Cannot use #{source.class} as source: expected a String or QueryBuilder::Processor"
       end
@@ -643,6 +646,10 @@ module QueryBuilder
         @query.main_table
       end
 
+      def set_main_class(klass)
+        @query.set_main_class(klass)
+      end
+
       def needs_join_table(*args)
         @query.needs_join_table(*args)
       end
@@ -660,7 +667,7 @@ module QueryBuilder
       end
 
       def connection
-        @connection ||= eval("#{@query.main_class}.connection", nil, __FILE__, __LINE__)
+        @connection ||= @query.default_class.connection
       end
   end
 end

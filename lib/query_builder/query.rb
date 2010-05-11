@@ -18,9 +18,29 @@ module QueryBuilder
       @main_table || processor_class.main_table
     end
 
+    # Return the class of resulting objects (different from default_class if
+    # the value has been changed by the query building process).
     def main_class
+      @main_class || default_class
+    end
+
+    # Return the default class of resulting objects (usually the base class).
+    def default_class
       klass = @processor_class.main_class
       QueryBuilder.resolve_const(klass)
+    end
+
+    # Define the class of the returned object. If a previous class
+    # has already been defined, try to find a common ancestor or revert
+    # to the default.
+    def set_main_class(klass)
+      if @main_class
+        # TODO
+        # For now: revert to default
+        @main_class = self.default_class
+      else
+        @main_class = klass
+      end
     end
 
     def add_filter(filter)
