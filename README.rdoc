@@ -96,6 +96,14 @@ And will be resolved as something like this:
 
 sudo gem install querybuilder
 
+== Creating your own builder
+
+To process queries for your own classes, you need to create a sub class of QueryBuilder::Processor and
+overwrite processing methods (See QueryNode or QueryComment in Zena CMS project for an example).
+
+Warning: when you write filters, if you join multiple clauses by hand with " AND " or " OR ", you have
+to enclose the group in parenthesis to avoid problems.
+
 == LICENSE:
 
 (The MIT License)
