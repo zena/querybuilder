@@ -109,11 +109,13 @@ void Init_querybuilder_ext() {
   }
 
   action string {
+    if (str_a == NULL) str_a = p;
     SET_TMP_ARY(_string);
     rb_ary_push(last, tmp);
   }
 
   action dstring {
+    if (str_a == NULL) str_a = p;
     SET_TMP_ARY(_dstring);
     rb_ary_push(last, tmp);
   }

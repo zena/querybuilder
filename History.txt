@@ -10,6 +10,7 @@
   * Added functions with dot syntax.
   * Added hook to deal with noop join scopes.
   * Better processing of clause_or (merging queries).
+  * Fixed a bug preventing parse of empty literals (compiled extension).
 
 == 0.6.0 2010-03-19
 

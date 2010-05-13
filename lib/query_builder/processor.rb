@@ -398,7 +398,7 @@ module QueryBuilder
 
       def process_dstring(string)
         raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
-        insert_bind(RubyLess.translate("\"#{string}\"", helper))
+        insert_bind(RubyLess.translate_string(string, helper))
       end
 
       def process_rubyless(string)

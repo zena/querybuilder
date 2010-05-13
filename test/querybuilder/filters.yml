@@ -98,3 +98,8 @@ functions:
   src: "objects where event_at.year = REF_DATE.year"
   sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:function, [:field, "event_at"], [:method, "year"]], [:function, [:field, "REF_DATE"], [:method, "year"]]]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE strftime('%Y',objects.event_at) = strftime('%Y',now()) AND objects.parent_id = ?}, id]"
+
+filter_empty_literal:
+  src: "objects where \"\" = ''"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:dstring, ""], [:string, ""]]]]'
+  sql: "SELECT objects.* FROM objects WHERE '' = '' AND objects.parent_id = 123"
