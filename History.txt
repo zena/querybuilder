@@ -1,6 +1,6 @@
 == 0.7.0
 
-* 6 major enhancements:
+* 9 major enhancements:
   * Fixed change class bugs.
   * A model can now include 'QueryBuilder' (better interface between class and compiler).
   * Better defaults declaration.
@@ -9,6 +9,7 @@
   * Added 'match' operator.
   * Added functions with dot syntax.
   * Added hook to deal with noop join scopes.
+  * Better processing of clause_or (merging queries).
 
 == 0.6.0 2010-03-19
 

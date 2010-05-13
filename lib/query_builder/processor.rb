@@ -200,17 +200,36 @@ module QueryBuilder
       end
 
       def process_clause_or(clause1, clause2)
-        process(clause2)
-        query2 = @query
-        @query = Query.new(this.class)
-        process(clause1)
-        merge_queries(@query, query2)
+        clauses = [clause2]
+
+        while true
+          if clause1.first == :clause_or
+            clauses << clause1[2]
+            clause1 = clause1[1]
+          else
+            clauses << clause1
+            break
+          end
+        end
+
+        clauses.map! do |clause|
+          process(clause)
+          query = @query
+          @query = Query.new(this.class)
+          query
+        end
+
+        merge_queries(clauses.reverse)
       end
 
-      def merge_queries(query1, query2)
-        @query = query1
-        @query.tables = (@query.tables + query2.tables).uniq
-        @query.where  = ["((#{@query.where.reverse.join(' AND ')}) OR (#{query2.where.reverse.join(' AND ')}))"]
+      def merge_queries(queries)
+        @query = queries.first
+        @query.tables = queries.inject([]) {|list, query| list + query.tables}.uniq
+        filters = queries.map do |query|
+          query.where.size > 1 ? "(#{query.where.reverse.join(' AND ')})" : query.where.first
+        end
+
+        @query.where = ["(#{filters.join(' OR ')})"]
         @query.distinct = true
       end
 

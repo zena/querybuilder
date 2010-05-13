@@ -138,7 +138,9 @@ class DummyProcessor < QueryBuilder::Processor
       add_table(main_table)
       add_table('links')
       # source --> target
-      add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]} AND #{table('links')}.relation_id = #{fields[1]} AND #{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
+      add_filter "#{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
+      add_filter "#{table('links')}.relation_id = #{fields[1]}"
+      add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]}"
     end
 
     def insert_after_filter
