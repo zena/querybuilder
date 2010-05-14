@@ -24,6 +24,16 @@ module QueryBuilder
       @main_class || default_class
     end
 
+    def master_class(after_class = ActiveRecord::Base)
+      klass = main_class
+      klass = klass.first if klass.kind_of?(Array)
+      begin
+        up = klass.superclass
+        return klass if up == after_class
+      end while klass = up
+      return main_class
+    end
+
     # Return the default class of resulting objects (usually the base class).
     def default_class
       klass = @processor_class.main_class
@@ -235,7 +245,7 @@ module QueryBuilder
       end
 
       def get_connection(bindings)
-        eval("#{main_class}.connection", bindings)
+        eval("#{default_class}.connection", bindings)
       end
 
       # Adapted from Rail's ActiveRecord code. We need "eval" because

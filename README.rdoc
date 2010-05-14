@@ -36,7 +36,7 @@ I am sure that I made not mistake in the 3 words of my pseudo-sql query (which j
 Everything in brackets is optional:
 
  'RELATION [where CLAUSE] [in SCOPE]
-  [from SUB_QUERY] [limit num(,num)] [offset num] [paginate key] [group by GROUP_CLAUSE] [order by ORDER_CLAUSE]'
+  [from SUB_QUERY] [group by GROUP_CLAUSE] [order by ORDER_CLAUSE] [limit num(,num)] [offset num] [paginate key]'
 
 The where CLAUSE can contain the following operators (lt, gt, le, etc are the same as '<' and company but avoid escaping in
 xml/html environments):

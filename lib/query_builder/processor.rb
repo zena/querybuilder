@@ -173,6 +173,7 @@ module QueryBuilder
         end
       end
 
+      # Returns the currently running processor (can be different if the class changed).
       def this
         @this || self
       end
@@ -260,10 +261,12 @@ module QueryBuilder
         end
       end
 
+      # Returns true if the query is the one producing the final result.
       def first?
         this.context[:first]
       end
 
+      # Returns true if the query is the closest to Ruby objects.
       def last?
         this.context[:last]
       end
@@ -544,7 +547,7 @@ module QueryBuilder
 
           if processor.kind_of?(Processor)
             # instance of processor
-          elsif processor.ancestors.include?(Processor)
+          elsif processor <= Processor
             processor = processor.new(this)
           else
             raise QueryBuilder::SyntaxError.new("Cannot use #{processor} as Query compiler (not a QueryBuilder::Processor).")
@@ -616,7 +619,12 @@ module QueryBuilder
 
       def table(table_name = nil, index = 0)
         if table_name.nil?
-          context[:table_alias] || @query.table(@query.main_table, index)
+          # Current context's table_alias
+          context[:table_alias] ||
+          # Search in the used tables:
+          @query.table(@query.main_table, index) ||
+          # Tables have not been introduced (custom_query):
+          @query.main_table
         else
           @query.table(table_name, index)
         end

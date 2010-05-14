@@ -49,6 +49,10 @@ limit:
   sxp: '[:query, [:limit, [:scope, [:relation, "objects"], "project"], [:integer, "2"]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2}, project_id]"
 
+limit_with_order:
+  src: "objects in project order by name desc limit 10"
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name DESC LIMIT 10}, project_id]"
+
 offset_in_limit:
   src: "objects in project limit 3,2"
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2 OFFSET 3}, project_id]"
