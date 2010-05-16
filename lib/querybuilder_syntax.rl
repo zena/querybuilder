@@ -14,7 +14,7 @@
   string   = ws* ("'" squote* "'" >string | '"' dquote* '"' >dstring);
   field    = var %field ('.' %function var %method)*;
   rcontent = ('"' dquote* '"') $str_a | ([^\}"\\] | '\n') $str_a | ('\\' (any | '\n') $str_a) ;
-  rubyless = ws* "#{" rcontent+ "}" >rubyless;
+  rubyless = ws* "#{" rcontent+ "}" >rubyless ('.' %function var %method)*;
   real     = ws* ('-'? ('0'..'9' digit* '.' digit+) ) $str_a %real;
   integer  = ws* ('-'? digit+ ) $str_a %integer;
   number   = (real | integer);

@@ -231,7 +231,7 @@ module QueryBuilder
         end
 
         @query.where = ["(#{filters.join(' OR ')})"]
-        @query.distinct = true
+        distinct!
       end
 
       def process_clause_par(content)
@@ -252,7 +252,7 @@ module QueryBuilder
 
       # Parse sub-query from right to left
       def process_from(query, sub_query)
-        @query.distinct = true
+        distinct!
         this.with(:first => false) do
           this.process(sub_query)
         end
@@ -537,7 +537,7 @@ module QueryBuilder
         end
       end
 
-      def change_processor(processor)
+      def change_processor(processor, opts = {})
         if @this
           @this.change_processor(processor)
         else
@@ -548,7 +548,7 @@ module QueryBuilder
           if processor.kind_of?(Processor)
             # instance of processor
           elsif processor <= Processor
-            processor = processor.new(this)
+            processor = processor.new(this, opts)
           else
             raise QueryBuilder::SyntaxError.new("Cannot use #{processor} as Query compiler (not a QueryBuilder::Processor).")
           end
@@ -695,6 +695,10 @@ module QueryBuilder
 
       def connection
         @connection ||= @query.default_class.connection
+      end
+
+      def distinct!
+        @query.distinct = true
       end
   end
 end
