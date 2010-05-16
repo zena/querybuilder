@@ -1,15 +1,15 @@
 simple:
   src: "objects where name = 'foo' in site"
   sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:"=", [:field, "name"], [:string, "foo"]]], "site"]]'
-  res: "[%Q{SELECT objects.* FROM objects WHERE objects.name = ?}, \"foo\"]"
+  res: "%Q{SELECT objects.* FROM objects WHERE objects.name = 'foo'}"
 
 recipients_where_kpath:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, \"NRCC%\", id]"
+  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
 
 hand_made_class_filter:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, \"NRCC%\", id]"
+  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
 
 better_class_filter:
   src: "recipients where class = 'Client'"
@@ -18,12 +18,12 @@ better_class_filter:
 like_filter_with_scope:
   src: "letters where name like 'a%' in site"
   sxp: '[:query, [:scope, [:filter, [:relation, "letters"], [:like, [:field, "name"], [:string, "a%"]]], "site"]]'
-  res: "[%Q{SELECT objects.* FROM objects WHERE objects.name LIKE ? AND objects.kpath LIKE 'NNL%'}, \"a%\"]"
+  res: "%Q{SELECT objects.* FROM objects WHERE objects.name LIKE 'a%' AND objects.kpath LIKE 'NNL%'}"
 
 not_like_with_scope:
   src: "letters where name not like 'a%' in site"
   sxp: '[:query, [:scope, [:filter, [:relation, "letters"], [:not, [:like, [:field, "name"], [:string, "a%"]]]], "site"]]'
-  res: "[%Q{SELECT objects.* FROM objects WHERE objects.name NOT LIKE ? AND objects.kpath LIKE 'NNL%'}, \"a%\"]"
+  res: "%Q{SELECT objects.* FROM objects WHERE objects.name NOT LIKE 'a%' AND objects.kpath LIKE 'NNL%'}"
 
 letters_group_by_name:
   sxp: '[:query, [:group, [:relation, "letters"], [:field, "name"]]]'
@@ -78,12 +78,12 @@ equation_in_filter_using_ne:
 equation_with_date_interval:
   src: "objects where event_at > '2006-04-01' + 6 week"
   sxp: '[:query, [:filter, [:relation, "objects"], [:>, [:field, "event_at"], [:+, [:string, "2006-04-01"], [:interval, [:integer, "6"], "week"]]]]]'
-  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at > ? + INTERVAL 6 WEEK AND objects.parent_id = ?}, \"2006-04-01\", id]"
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.event_at > '2006-04-01' + INTERVAL 6 WEEK AND objects.parent_id = ?}, id]"
 
 equation_and_or_par:
   src: "objects where event_at > '2006-04-01' or name like 'foo%'"
   sxp: '[:query, [:filter, [:relation, "objects"], [:or, [:>, [:field, "event_at"], [:string, "2006-04-01"]], [:like, [:field, "name"], [:string, "foo%"]]]]]'
-  res: "[%Q{SELECT objects.* FROM objects WHERE (objects.event_at > ? OR objects.name LIKE ?) AND objects.parent_id = ?}, \"2006-04-01\", \"foo%\", id]"
+  res: "[%Q{SELECT objects.* FROM objects WHERE (objects.event_at > '2006-04-01' OR objects.name LIKE 'foo%') AND objects.parent_id = ?}, id]"
 
 equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5 "

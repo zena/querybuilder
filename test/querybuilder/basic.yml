@@ -88,4 +88,4 @@ after_process_callback:
   context:
     after_filter: '(1 = 1)'
   src: "objects where name like 'a%' or name like 'b%' in site"
-  res: "[%Q{SELECT objects.* FROM objects WHERE (1 = 1) AND (objects.name LIKE ? OR objects.name LIKE ?)}, \"a%\", \"b%\"]"
+  res: "%Q{SELECT objects.* FROM objects WHERE (1 = 1) AND (objects.name LIKE 'a%' OR objects.name LIKE 'b%')}"

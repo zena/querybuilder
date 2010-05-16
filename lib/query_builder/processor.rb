@@ -227,7 +227,7 @@ module QueryBuilder
         @query = queries.first
         @query.tables = queries.inject([]) {|list, query| list + query.tables}.uniq
         filters = queries.map do |query|
-          query.where.size > 1 ? "(#{query.where.reverse.join(' AND ')})" : query.where.first
+          query.where.size > 1 ? "(#{query.filter})" : query.where.first
         end
 
         @query.where = ["(#{filters.join(' OR ')})"]
@@ -396,18 +396,20 @@ module QueryBuilder
       end
 
       def process_string(string)
-        insert_bind(string.inspect)
+        quote(string)
       end
 
       def process_dstring(string)
         raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
-        insert_bind(RubyLess.translate_string(string, helper))
+        res = RubyLess.translate_string(string, helper)
+        res.literal ? quote(res.literal) : insert_bind(res)
       end
 
       def process_rubyless(string)
         # compile RubyLess...
         raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
-        insert_bind(RubyLess.translate(string, helper))
+        res = RubyLess.translate(string, helper)
+        res.literal ? quote(res.literal) : insert_bind(res)
       end
 
       def process_interval(value, interval)

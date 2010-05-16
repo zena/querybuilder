@@ -3,6 +3,7 @@ module QueryBuilder
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
                   :pagination_key
+
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []
@@ -162,6 +163,11 @@ module QueryBuilder
       end
     end
 
+
+    def filter
+      @where.reverse.join(' AND ')
+    end
+
     private
       # Make sure each used table gets a unique name
       def get_alias(use_name, table_name = nil, avoid_alias = true)
@@ -217,7 +223,7 @@ module QueryBuilder
           group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
         end
 
-        "SELECT #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        "SELECT #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement
@@ -241,7 +247,7 @@ module QueryBuilder
           count_on = "COUNT(*)"
         end
 
-        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{@where.reverse.join(' AND ')}")
+        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}")
       end
 
       def get_connection(bindings)

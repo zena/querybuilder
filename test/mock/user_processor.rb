@@ -1,4 +1,8 @@
 class TestUser
+  def self.connection; self; end
+  def self.quote(obj)
+    obj.kind_of?(String) ? "'#{obj}'" : obj
+  end
 end
 
 class UserProcessor < QueryBuilder::Processor
