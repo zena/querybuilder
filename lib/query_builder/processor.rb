@@ -422,6 +422,10 @@ module QueryBuilder
         "#{process(left)} #{op.to_s.upcase} #{process(right)}"
       end
 
+      def process_raw(expr)
+        expr.upcase
+      end
+
       def process_not(expr)
         if expr.first == :like
           "#{this.process(expr[1])} NOT LIKE #{this.process(expr[2])}"

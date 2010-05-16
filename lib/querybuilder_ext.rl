@@ -13,8 +13,10 @@ static VALUE _integer;
 static VALUE _real;
 static VALUE _field;
 static VALUE _method;
+static VALUE _raw;
 static VALUE _function;
 static VALUE _relation;
+static VALUE _is;
 static VALUE _interval;
 static VALUE _scope;
 static VALUE _filter;
@@ -60,8 +62,10 @@ void Init_querybuilder_ext() {
   STORE_SYM(real);
   STORE_SYM(field);
   STORE_SYM(method);
+  STORE_SYM(raw);
   STORE_SYM(function);
   STORE_SYM(relation);
+  STORE_SYM(is);
   STORE_SYM(interval);
   STORE_SYM(scope);
   STORE_SYM(filter);
@@ -145,6 +149,12 @@ void Init_querybuilder_ext() {
     rb_ary_push(last, tmp);
   }
 
+  action raw {
+    SET_TMP_ARY(_raw);
+    rb_ary_push(last, tmp);
+  }
+
+
   action function {
     // last = apply_op(stack, :function)
     APPLY_OP(_function);
@@ -175,6 +185,12 @@ void Init_querybuilder_ext() {
     tmp = ID2SYM(rb_to_id(rb_funcall(tmp, _downcase, 0)));
     APPLY_OP(tmp);
     // last = apply_op(stack, str_buf.downcase.to_sym)
+  }
+
+  action is {
+    // We need the 'is' operator to avoid confusion with 'in site'.
+    APPLY_OP(_is);
+    // last = apply_op(stack, :is)
   }
 
   action interval {

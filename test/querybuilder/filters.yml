@@ -90,6 +90,16 @@ equation_par:
   sxp: '[:query, [:filter, [:relation, "objects"], [:and, [:par, [:or, [:>, [:integer, "1"], [:integer, "2"]], [:>, [:integer, "2"], [:integer, "3"]]]], [:"=", [:integer, "4"], [:integer, "5"]]]]]'
 #  res: "[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ? AND (1 > 2 OR 2 > 3) AND 4 = 5}, id]"
 
+is_not_null:
+  src: "objects where name is not null"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:is, [:field, "name"], [:raw, "not null"]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.name IS NOT NULL AND objects.parent_id = ?}, id]"
+
+is_null:
+  src: "objects where name is null"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:is, [:field, "name"], [:raw, "null"]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.name IS NULL AND objects.parent_id = ?}, id]"
+
 match:
   src: "objects where fulltext match 'one'"
   sxp: '[:query, [:filter, [:relation, "objects"], [:match, [:field, "fulltext"], [:string, "one"]]]]'

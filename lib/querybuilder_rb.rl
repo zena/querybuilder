@@ -42,6 +42,11 @@ module QueryBuilder
       str_buf = ""
     }
 
+    action raw {
+      last << [:raw, str_buf]
+      str_buf = ""
+    }
+
     action function {
       last = apply_op(stack, :function)
       str_buf = ""
@@ -62,6 +67,11 @@ module QueryBuilder
     action operator {
       last = apply_op(stack, str_buf.downcase.to_sym)
       str_buf = ""
+    }
+
+    action is {
+      # We need the 'is' operator to avoid confusion with 'in site'.
+      last = apply_op(stack, :is)
     }
 
     action interval {

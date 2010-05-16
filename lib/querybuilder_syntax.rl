@@ -23,7 +23,8 @@
   operator = (op %operator | text_op %operator ws+ );
   interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a %interval 's'?;
   value    = ((field | string | number | rubyless) interval? | ws* '(' >goto_expr_p ws* ')');
-  expr     = value (operator value)*;
+  is_null  = ws+ 'is' %is ws+ (('not' ws+)* ('null' | 'NULL')) $str_a %raw;
+  expr     = value (operator value | is_null)*;
   expr_p  := expr ws* ')' $expr_close;
 
   relation = ws* var %relation;
