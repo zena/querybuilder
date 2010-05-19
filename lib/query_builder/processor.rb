@@ -31,6 +31,10 @@ module QueryBuilder
         (self.after_process_callbacks ||= []) << callback
       end
 
+      def insert_bind(str)
+        "[[#{str}]]"
+      end
+
       # Load prepared SQL definitions from a set of directories. If the file does not contain "group" or "groups" keys,
       # the filename is used as group.
       #
@@ -522,7 +526,7 @@ module QueryBuilder
       end
 
       def insert_bind(str)
-        "[[#{str}]]"
+        self.class.insert_bind(str)
       end
 
       def with(hash)
