@@ -474,6 +474,7 @@ module QueryBuilder
         merge_queries([left_query, right_query], false)
         @query.tables      = left_query.tables
         @query.table_alias = left_query.table_alias
+        @query.distinct    = left_query.distinct
 
         merge_or_filters([left_query, right_query])
       end
