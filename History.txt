@@ -1,3 +1,8 @@
+== 0.8.0 2010-05-27
+
+* Major enhancements:
+  * Better handling of mixed 'or' clauses.
+
 == 0.7.0 2010-05-27
 
 * Major enhancements:

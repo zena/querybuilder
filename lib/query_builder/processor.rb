@@ -224,18 +224,53 @@ module QueryBuilder
           query
         end
 
-        merge_queries(clauses.reverse)
+        @query = merge_queries(clauses.reverse)
       end
 
-      def merge_queries(queries)
-        @query = queries.first
-        @query.tables = queries.inject([]) {|list, query| list + query.tables}.uniq
+      def merge_queries(queries, merge_filters = true)
+        tables = []
+        table_alias = {}
+
+        queries.each do |query|
+          tables += query.tables
+          table_alias.merge!(query.table_alias)
+        end
+
+        tables.uniq!
+
+        queries.each do |query|
+          missing_tables = tables - query.tables
+          missing_tables.each do |missing_table|
+            if missing_table =~ /^(.+) AS (.+)$/
+              resolve_missing_table(query, $1, $2)
+            else
+              resolve_missing_table(query, missing_table, missing_table)
+            end
+          end
+        end
+
+        query = queries.first
+        query.tables = tables
+        query.table_alias = table_alias
+
+        query.where = [merge_or_filters(queries)] if merge_filters
+
+        query.distinct = true
+        query
+      end
+
+      # Fix every query to work with the final list of tables (insert dummy clauses for example).
+      def resolve_missing_table(query, table_alias, table_name)
+        # raise an error
+        raise QueryBuilder::Error.new("Could not resolve missing '#{table_name}' in OR clause.")
+      end
+
+      def merge_or_filters(queries)
         filters = queries.map do |query|
           query.where.size > 1 ? "(#{query.filter})" : query.where.first
         end
 
-        @query.where = ["(#{filters.join(' OR ')})"]
-        distinct!
+        "(#{filters.join(' OR ')})"
       end
 
       def process_clause_par(content)
@@ -313,7 +348,9 @@ module QueryBuilder
         elsif (context[:scope_type] = :context) && context_relation(relation)
         elsif (context[:scope_type] = :filter)  && filter_relation(relation)
         else
-          raise QueryBuilder::SyntaxError.new("Unknown relation '#{relation}'.")
+          # Strange Ruby bug ? Using dstring directly in new method generates garbled UTF8...
+          msg = "Unknown relation '#{relation}'."
+          raise QueryBuilder::SyntaxError.new(msg)
         end
       end
 
@@ -421,7 +458,31 @@ module QueryBuilder
       end
 
       def process_or(left, right)
-        "(#{this.process(left)} OR #{this.process(right)})"
+        left_query  = @query.dup
+        left_query.where = []
+        right_query = @query.dup
+        right_query.where = []
+
+        with_query(left_query) do
+          add_filter process(left)
+        end
+
+        with_query(right_query) do
+          add_filter process(right)
+        end
+
+        merge_queries([left_query, right_query], false)
+        @query.tables      = left_query.tables
+        @query.table_alias = left_query.table_alias
+
+        merge_or_filters([left_query, right_query])
+      end
+
+      def with_query(query)
+        bak = @query
+        @query = query
+        yield
+        @query = bak
       end
 
       def process_op(op, left, right)

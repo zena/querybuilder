@@ -85,6 +85,14 @@ equation_and_or_par:
   sxp: '[:query, [:filter, [:relation, "objects"], [:or, [:>, [:field, "event_at"], [:string, "2006-04-01"]], [:like, [:field, "name"], [:string, "foo%"]]]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE (objects.event_at > '2006-04-01' OR objects.name LIKE 'foo%') AND objects.parent_id = ?}, id]"
 
+or_with_same_tables:
+  src: "objects where index = 5 or index = 7"
+  res: "[%Q{SELECT objects.* FROM index,objects WHERE ((index.value = 5 AND index.node_id = objects.id) OR (index.value = 7 AND index.node_id = objects.id)) AND objects.parent_id = ?}, id]"
+
+or_with_missing_table:
+  src: "objects where index = 5 or 7"
+  res: "[%Q{SELECT objects.* FROM index,objects WHERE ((index.value = 5 AND index.node_id = objects.id) OR (7 AND index.node_id = 0)) AND objects.parent_id = ?}, id]"
+
 equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5 "
   sxp: '[:query, [:filter, [:relation, "objects"], [:and, [:par, [:or, [:>, [:integer, "1"], [:integer, "2"]], [:>, [:integer, "2"], [:integer, "3"]]]], [:"=", [:integer, "4"], [:integer, "5"]]]]]'

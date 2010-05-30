@@ -32,9 +32,26 @@ class DummyProcessor < QueryBuilder::Processor
       "#{table}.#{fld_name}"
     elsif fld_name == 'REF_DATE'
       context[:ref_date] ? insert_bind(context[:ref_date]) : 'now()'
+    elsif fld_name == 'index'
+      add_table('index')
+      add_filter "#{table('index')}.node_id = #{field_or_attr('id', table(self.class.main_table))}"
+      "#{table('index')}.value"
     else
       super # raises an error
     end
+  end
+
+  def resolve_missing_table(query, table_alias, table_name)
+    case table_name
+    when 'index'
+      query.where.insert 0, "#{table_alias}.node_id = 0"
+    when 'links'
+      query.where.insert 0, "#{table_alias}.node_id = 0"
+    else
+      # Raise an error
+      super
+    end
+    # do nothing
   end
 
   # We do special things with 'class ='

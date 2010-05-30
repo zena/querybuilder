@@ -140,6 +140,15 @@ module QueryBuilder
       end
     end
 
+    # Duplicate query, avoiding mutual
+    def dup
+      other = super
+      %w{tables table_alias where}.each do |k|
+        other.send("#{k}=", other.send(k).dup)
+      end
+      other
+    end
+
     # Used after setting @tables from custom query.
     def rebuild_tables!
       @table_alias = {}
