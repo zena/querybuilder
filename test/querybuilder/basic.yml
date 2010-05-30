@@ -70,12 +70,12 @@ paginate:
 recipients_or_objects:
   src: recipients or objects
   sxp: '[:query, [:clause_or, [:relation, "recipients"], [:relation, "objects"]]]'
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ? AND links.node_id = 0)) GROUP BY objects.id}, id, id]"
+  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ? AND links.id = 0)) GROUP BY objects.id}, id, id]"
 
 recipients_or_objects_or_letters:
   src: recipients or objects or letters
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (links.node_id = 0 AND objects.parent_id = ?) OR (links.node_id = 0 AND objects.kpath LIKE 'NNL%' AND objects.parent_id = ?)) GROUP BY objects.id}, id, id, id]"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ? AND links.node_id = 0) OR (objects.kpath LIKE 'NNL%' AND objects.parent_id = ? AND links.node_id = 0)) GROUP BY objects.id}, id, id, id]"
+  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (links.id = 0 AND objects.parent_id = ?) OR (links.id = 0 AND objects.kpath LIKE 'NNL%' AND objects.parent_id = ?)) GROUP BY objects.id}, id, id, id]"
+  res: "[%Q{SELECT objects.* FROM links,objects WHERE ((objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?) OR (objects.parent_id = ? AND links.id = 0) OR (objects.kpath LIKE 'NNL%' AND objects.parent_id = ? AND links.id = 0)) GROUP BY objects.id}, id, id, id]"
 
 or_clause_with_filter:
   src: "(recipients where name = 'foo') or objects"

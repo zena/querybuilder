@@ -44,9 +44,9 @@ class DummyProcessor < QueryBuilder::Processor
   def resolve_missing_table(query, table_alias, table_name)
     case table_name
     when 'index'
-      query.where.insert 0, "#{table_alias}.node_id = 0"
+      query.where.insert 0, "#{table_alias}.id = 0"
     when 'links'
-      query.where.insert 0, "#{table_alias}.node_id = 0"
+      query.where.insert 0, "#{table_alias}.id = 0"
     else
       # Raise an error
       super

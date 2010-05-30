@@ -91,7 +91,7 @@ or_with_same_tables:
 
 or_with_missing_table:
   src: "objects where index = 5 or 7"
-  res: "[%Q{SELECT objects.* FROM index,objects WHERE ((index.value = 5 AND index.node_id = objects.id) OR (7 AND index.node_id = 0)) AND objects.parent_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM index,objects WHERE ((index.value = 5 AND index.node_id = objects.id) OR (7 AND index.id = 0)) AND objects.parent_id = ?}, id]"
 
 equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5 "
