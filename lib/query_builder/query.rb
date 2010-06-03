@@ -46,9 +46,8 @@ module QueryBuilder
     # to the default.
     def set_main_class(klass)
       if @main_class
-        # TODO
-        # For now: revert to default
-        @main_class = self.default_class
+        # FIXME: be clever on different klass settings in filters ...
+        @main_class = klass
       else
         @main_class = klass
       end

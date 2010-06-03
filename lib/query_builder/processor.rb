@@ -141,6 +141,8 @@ module QueryBuilder
 
         @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
+
+        @query.set_main_class(@opts[:main_class]) if @opts[:main_class]
         before_process
 
         process_all
