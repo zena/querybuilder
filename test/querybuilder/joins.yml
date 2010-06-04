@@ -26,6 +26,11 @@ tags:
 complex_from_with_scopes:
   src: "letters where name = 'foo' in project from letters in section"
   sxp: '[:query, [:from, [:scope, [:filter, [:relation, "letters"], [:"=", [:field, "name"], [:string, "foo"]]], "project"], [:scope, [:relation, "letters"], "section"]]]'
+
+complex_from_with_scopes_and_typed_scope:
+  # instead of 'project', we give it a class with 'jobs:project'
+  src: "letters where name = 'foo' in jobs:project from letters in section"
+  sxp: '[:query, [:from, [:scope, [:filter, [:relation, "letters"], [:"=", [:field, "name"], [:string, "foo"]]], "jobs:project"], [:scope, [:relation, "letters"], "section"]]]'
   
 letters_in_project_from_letters:
   sxp: '[:query, [:from, [:scope, [:relation, "letters"], "project"], [:relation, "letters"]]]'

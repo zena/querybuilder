@@ -2,6 +2,7 @@
 
 * Major enhancements:
   * Better handling of mixed 'or' clauses.
+  * Allowing ':' in relations and scopes.
 
 == 0.7.0 2010-05-27
 

@@ -2,7 +2,7 @@ module QueryBuilder
   class Query
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
-                  :pagination_key
+                  :pagination_key, :main_class
 
     def initialize(processor_class)
       @processor_class = processor_class
@@ -39,18 +39,6 @@ module QueryBuilder
     def default_class
       klass = @processor_class.main_class
       QueryBuilder.resolve_const(klass)
-    end
-
-    # Define the class of the returned object. If a previous class
-    # has already been defined, try to find a common ancestor or revert
-    # to the default.
-    def set_main_class(klass)
-      if @main_class
-        # FIXME: be clever on different klass settings in filters ...
-        @main_class = klass
-      else
-        @main_class = klass
-      end
     end
 
     def add_filter(filter)

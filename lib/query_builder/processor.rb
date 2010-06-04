@@ -141,8 +141,7 @@ module QueryBuilder
 
         @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
-
-        @query.set_main_class(@opts[:main_class]) if @opts[:main_class]
+        @query.main_class = @opts[:main_class] if @opts[:main_class]
         before_process
 
         process_all
@@ -220,9 +219,10 @@ module QueryBuilder
         end
 
         clauses.map! do |clause|
-          process(clause)
-          query = @query
-          @query = Query.new(this.class)
+          query = @query.dup
+          with_query(query) do
+            process(clause)
+          end
           query
         end
 
@@ -258,6 +258,10 @@ module QueryBuilder
         query.where = [merge_or_filters(queries)] if merge_filters
 
         query.distinct = true
+
+        # FIXME: !! We need to resolve main_class from different 'or' clauses !!
+        # query.main_class = ...
+
         query
       end
 
@@ -628,6 +632,7 @@ module QueryBuilder
           end
 
           @query.processor_class = processor.class
+          @query.main_class = QueryBuilder.resolve_const(processor.class.main_class)
           update_processor(processor)
         end
       end
@@ -748,7 +753,8 @@ module QueryBuilder
       end
 
       def set_main_class(klass)
-        @query.set_main_class(klass)
+        # FIXME: be clever on different klass settings in filters (AND / OR)...
+        @query.main_class = klass
       end
 
       def needs_join_table(*args)

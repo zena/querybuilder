@@ -8,7 +8,7 @@
   # The where CLAUSE can contain the following operators
 
   ws       = ' ' | '\t' | '\n';
-  var      = ws* ([a-zA-Z_]+) $str_a;
+  var      = ws* ([a-zA-Z_:]+) $str_a;
   dquote   = ([^"\\] | '\n') $str_a | ('\\' (any | '\n') $str_a);
   squote   = ([^'\\] | '\n') $str_a | ('\\' (any | '\n') $str_a);
   string   = ws* ("'" squote* "'" >string | '"' dquote* '"' >dstring);
