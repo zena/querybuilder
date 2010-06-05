@@ -646,6 +646,7 @@ module QueryBuilder
 
       def custom_query(relation)
         return false unless first? && last?  # current safety net until "from" is correctly implemented and tested
+
         custom_queries = self.class.custom_queries[self.class]
         if custom_queries &&
            custom_queries[@opts[:custom_query_group]] &&

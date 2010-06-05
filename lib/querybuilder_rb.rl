@@ -87,6 +87,7 @@ module QueryBuilder
 
     action goto_expr_p {
       # remember current machine state 'cs'
+      par_count += 1
       last << [:par, cs]
       stack.push last.last
       last = last.last
@@ -96,6 +97,7 @@ module QueryBuilder
     action expr_close {
       pop_stack(stack, :par_close)
       # reset machine state 'cs'
+      par_count -= 1
       cs = stack.last.delete_at(1)
       # one more time to remove [:par...] line
       stack.pop
@@ -195,6 +197,7 @@ module QueryBuilder
       else
         data = "#{arg}\n"
       end
+      par_count = 0
       stack = [[:query]]
       last  = stack.last
       str_buf         = ""
@@ -206,7 +209,11 @@ module QueryBuilder
       if p < pe
         p = p - 3
         p = 0 if p < 0
-        raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
+        raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-2].inspect}.")
+      end
+
+      if par_count > 0
+        raise QueryBuilder::SyntaxError.new("Missing closing parenthesis in #{data[0..-2].inspect}.")
       end
       stack.first
     end

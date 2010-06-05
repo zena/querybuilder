@@ -209,6 +209,7 @@ void Init_querybuilder_ext() {
 
   action goto_expr_p {
     // # remember current machine state 'cs'
+    par_count = par_count + 1;
     // last << [:par, cs]
     tmp = rb_ary_new();
     rb_ary_push(tmp, _par);
@@ -225,6 +226,7 @@ void Init_querybuilder_ext() {
     // pop_stack(stack, :par_close)
     rb_funcall(self, _pop_stack, 2, stack, _par_close);
     // # reset machine state 'cs'
+    par_count = par_count - 1;
     // cs = stack.last.delete_at(1)
     tmp = rb_ary_entry(stack, -1);
     tmp = rb_ary_delete_at(tmp, 1);
@@ -388,6 +390,7 @@ VALUE rb_parse(VALUE self, VALUE arg) {
   const char * data = RSTRING_PTR(tmp);
 
   int cs;
+  int par_count = 0;
   const char * p     = data;
   const char * pe    = data + RSTRING_LEN(tmp);
   const char * eof   = pe;
@@ -407,11 +410,16 @@ VALUE rb_parse(VALUE self, VALUE arg) {
   %% write init;
   %% write exec;
 
-  // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
+  // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-2].inspect}.") if p != pe
   if (p < pe) {
     p = p - 3;
     if (p < data) p = data;
     rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+  }
+
+  if (par_count > 0) {
+    // raise QueryBuilder::SyntaxError.new("Missing closing parenthesis in #{data[0..-2].inspect}.")
+    rb_raise(rb_SyntaxError, "Missing closing parenthesis in %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(data , pe - data - 1))));
   }
 
   return rb_ary_entry(stack, 0);

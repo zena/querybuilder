@@ -3,7 +3,7 @@
 module QueryBuilder
   class Parser
   
-# line 188 "querybuilder_rb.rl"
+# line 190 "querybuilder_rb.rl"
 
 
     
@@ -1292,7 +1292,7 @@ end
 self.querybuilder_en_main = 1;
 
 
-# line 191 "querybuilder_rb.rl"
+# line 193 "querybuilder_rb.rl"
 
     def self.parse(arg)
       if arg.kind_of?(Array)
@@ -1300,22 +1300,23 @@ self.querybuilder_en_main = 1;
       else
         data = "#{arg}\n"
       end
+      par_count = 0
       stack = [[:query]]
       last  = stack.last
       str_buf         = ""
       clause_state = :relation
       eof = 0;
       
-# line 1310 "querybuilder_rb.rb"
+# line 1311 "querybuilder_rb.rb"
 begin
 	p ||= 0
 	pe ||= data.length
 	cs = querybuilder_start
 end
 
-# line 204 "querybuilder_rb.rl"
+# line 207 "querybuilder_rb.rl"
       
-# line 1319 "querybuilder_rb.rb"
+# line 1320 "querybuilder_rb.rb"
 begin
 	_klen, _trans, _keys, _acts, _nacts = nil
 	_goto_level = 0
@@ -1515,6 +1516,7 @@ when 16 then
 		begin
 
       # remember current machine state 'cs'
+      par_count += 1
       last << [:par, cs]
       stack.push last.last
       last = last.last
@@ -1527,11 +1529,12 @@ when 16 then
 
     		end
 when 17 then
-# line 96 "querybuilder_rb.rl"
+# line 97 "querybuilder_rb.rl"
 		begin
 
       pop_stack(stack, :par_close)
       # reset machine state 'cs'
+      par_count -= 1
       cs = stack.last.delete_at(1)
       # one more time to remove [:par...] line
       stack.pop
@@ -1540,7 +1543,7 @@ when 17 then
       p = p - 1;
     		end
 when 18 then
-# line 107 "querybuilder_rb.rl"
+# line 109 "querybuilder_rb.rl"
 		begin
 
       # remember current machine state 'cs'
@@ -1557,7 +1560,7 @@ when 18 then
 
     		end
 when 19 then
-# line 116 "querybuilder_rb.rl"
+# line 118 "querybuilder_rb.rl"
 		begin
 
       pop_stack(stack, :clause_par_close)
@@ -1571,7 +1574,7 @@ when 19 then
       p = p - 1;
     		end
 when 20 then
-# line 128 "querybuilder_rb.rl"
+# line 130 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :scope)
@@ -1579,53 +1582,53 @@ when 20 then
       str_buf = ""
     		end
 when 21 then
-# line 134 "querybuilder_rb.rl"
+# line 136 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :offset)
     		end
 when 22 then
-# line 138 "querybuilder_rb.rl"
+# line 140 "querybuilder_rb.rl"
 		begin
 
       last << [:param, str_buf]
       str_buf = ""
     		end
 when 23 then
-# line 143 "querybuilder_rb.rl"
+# line 145 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :paginate)
     		end
 when 24 then
-# line 147 "querybuilder_rb.rl"
+# line 149 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :limit)
       str_buf = ""
     		end
 when 25 then
-# line 152 "querybuilder_rb.rl"
+# line 154 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :order)
       str_buf = ""
     		end
 when 26 then
-# line 157 "querybuilder_rb.rl"
+# line 159 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :group)
     		end
 when 27 then
-# line 161 "querybuilder_rb.rl"
+# line 163 "querybuilder_rb.rl"
 		begin
 
       last = apply_op(stack, :from)
       clause_state = :relation
     		end
 when 28 then
-# line 166 "querybuilder_rb.rl"
+# line 168 "querybuilder_rb.rl"
 		begin
 
       if clause_state == :relation
@@ -1634,14 +1637,14 @@ when 28 then
       end
     		end
 when 29 then
-# line 177 "querybuilder_rb.rl"
+# line 179 "querybuilder_rb.rl"
 		begin
 
       p = p - 3
       p = 0 if p < 0
       raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
     		end
-# line 1645 "querybuilder_rb.rb"
+# line 1648 "querybuilder_rb.rb"
 			end # action switch
 		end
 	end
@@ -1670,14 +1673,14 @@ when 29 then
 		__acts += 1
 		case _querybuilder_actions[__acts - 1]
 when 29 then
-# line 177 "querybuilder_rb.rl"
+# line 179 "querybuilder_rb.rl"
 		begin
 
       p = p - 3
       p = 0 if p < 0
       raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
     		end
-# line 1681 "querybuilder_rb.rb"
+# line 1684 "querybuilder_rb.rb"
 		end # eof action switch
 	end
 	if _trigger_goto
@@ -1691,12 +1694,16 @@ end
 	end
 	end
 
-# line 205 "querybuilder_rb.rl"
+# line 208 "querybuilder_rb.rl"
 
       if p < pe
         p = p - 3
         p = 0 if p < 0
-        raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.")
+        raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-2].inspect}.")
+      end
+
+      if par_count > 0
+        raise QueryBuilder::SyntaxError.new("Missing closing parenthesis in #{data[0..-2].inspect}.")
       end
       stack.first
     end

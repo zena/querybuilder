@@ -3,6 +3,7 @@
 * Major enhancements:
   * Better handling of mixed 'or' clauses.
   * Allowing ':' in relations and scopes.
+  * Raises a SyntaxError on non-closing parenthesis.
 
 == 0.7.0 2010-05-27
 

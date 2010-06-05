@@ -108,7 +108,7 @@ void Init_querybuilder_ext() {
 #define APPLY_OP(elem) last = rb_funcall(self, _apply_op, 2, stack, elem);
 
 
-#line 366 "querybuilder_ext.rl"
+#line 368 "querybuilder_ext.rl"
 
 
 
@@ -1430,7 +1430,7 @@ static const int querybuilder_en_clause_p = 450;
 static const int querybuilder_en_main = 1;
 
 
-#line 369 "querybuilder_ext.rl"
+#line 371 "querybuilder_ext.rl"
 
 #define CLAUSE_RELATION    1
 #define CLAUSE_PARENTHESIS 2
@@ -1453,6 +1453,7 @@ VALUE rb_parse(VALUE self, VALUE arg) {
   const char * data = RSTRING_PTR(tmp);
 
   int cs;
+  int par_count = 0;
   const char * p     = data;
   const char * pe    = data + RSTRING_LEN(tmp);
   const char * eof   = pe;
@@ -1470,14 +1471,14 @@ VALUE rb_parse(VALUE self, VALUE arg) {
 
 
   
-#line 1474 "querybuilder_ext.c"
+#line 1475 "querybuilder_ext.c"
 	{
 	cs = querybuilder_start;
 	}
 
-#line 408 "querybuilder_ext.rl"
+#line 411 "querybuilder_ext.rl"
   
-#line 1481 "querybuilder_ext.c"
+#line 1482 "querybuilder_ext.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -1684,6 +1685,7 @@ _match:
 #line 210 "querybuilder_ext.rl"
 	{
     // # remember current machine state 'cs'
+    par_count = par_count + 1;
     // last << [:par, cs]
     tmp = rb_ary_new();
     rb_ary_push(tmp, _par);
@@ -1697,11 +1699,12 @@ _match:
   }
 	break;
 	case 17:
-#line 224 "querybuilder_ext.rl"
+#line 225 "querybuilder_ext.rl"
 	{
     // pop_stack(stack, :par_close)
     rb_funcall(self, _pop_stack, 2, stack, _par_close);
     // # reset machine state 'cs'
+    par_count = par_count - 1;
     // cs = stack.last.delete_at(1)
     tmp = rb_ary_entry(stack, -1);
     tmp = rb_ary_delete_at(tmp, 1);
@@ -1716,7 +1719,7 @@ _match:
   }
 	break;
 	case 18:
-#line 241 "querybuilder_ext.rl"
+#line 243 "querybuilder_ext.rl"
 	{
     clause_state = CLAUSE_PARENTHESIS;
     // # remember current machine state 'cs'
@@ -1733,7 +1736,7 @@ _match:
   }
 	break;
 	case 19:
-#line 256 "querybuilder_ext.rl"
+#line 258 "querybuilder_ext.rl"
 	{
     clause_state = CLAUSE_RELATION;
     // pop_stack(stack, :clause_par_close)
@@ -1753,7 +1756,7 @@ _match:
   }
 	break;
 	case 20:
-#line 274 "querybuilder_ext.rl"
+#line 276 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :scope)
     APPLY_OP(_scope);
@@ -1763,7 +1766,7 @@ _match:
   }
 	break;
 	case 21:
-#line 282 "querybuilder_ext.rl"
+#line 284 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :offset)
     APPLY_OP(_offset);
@@ -1772,7 +1775,7 @@ _match:
   }
 	break;
 	case 22:
-#line 289 "querybuilder_ext.rl"
+#line 291 "querybuilder_ext.rl"
 	{
     // last << [:param, str_buf]
     SET_TMP_ARY(_param);
@@ -1780,7 +1783,7 @@ _match:
   }
 	break;
 	case 23:
-#line 295 "querybuilder_ext.rl"
+#line 297 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :paginate)
     APPLY_OP(_paginate);
@@ -1789,7 +1792,7 @@ _match:
   }
 	break;
 	case 24:
-#line 302 "querybuilder_ext.rl"
+#line 304 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :limit)
     APPLY_OP(_limit);
@@ -1798,7 +1801,7 @@ _match:
   }
 	break;
 	case 25:
-#line 309 "querybuilder_ext.rl"
+#line 311 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :order)
     APPLY_OP(_order);
@@ -1807,7 +1810,7 @@ _match:
   }
 	break;
 	case 26:
-#line 316 "querybuilder_ext.rl"
+#line 318 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :group)
     APPLY_OP(_group);
@@ -1816,7 +1819,7 @@ _match:
   }
 	break;
 	case 27:
-#line 323 "querybuilder_ext.rl"
+#line 325 "querybuilder_ext.rl"
 	{
     // last = apply_op(stack, :from)
     APPLY_OP(_from);
@@ -1826,7 +1829,7 @@ _match:
   }
 	break;
 	case 28:
-#line 331 "querybuilder_ext.rl"
+#line 333 "querybuilder_ext.rl"
 	{
     // if clause_state == :relation
     //   last = apply_op(stack, "clause_#{str_buf}".to_sym)
@@ -1843,7 +1846,7 @@ _match:
   }
 	break;
 	case 29:
-#line 354 "querybuilder_ext.rl"
+#line 356 "querybuilder_ext.rl"
 	{
     p = p - 3;
     if (p < data) p = data;
@@ -1851,7 +1854,7 @@ _match:
     rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
 	break;
-#line 1855 "querybuilder_ext.c"
+#line 1858 "querybuilder_ext.c"
 		}
 	}
 
@@ -1868,7 +1871,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 29:
-#line 354 "querybuilder_ext.rl"
+#line 356 "querybuilder_ext.rl"
 	{
     p = p - 3;
     if (p < data) p = data;
@@ -1876,7 +1879,7 @@ _again:
     rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
   }
 	break;
-#line 1880 "querybuilder_ext.c"
+#line 1883 "querybuilder_ext.c"
 		}
 	}
 	}
@@ -1884,13 +1887,18 @@ _again:
 	_out: {}
 	}
 
-#line 409 "querybuilder_ext.rl"
+#line 412 "querybuilder_ext.rl"
 
-  // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-1].chomp.inspect}.") if p != pe
+  // raise QueryBuilder::SyntaxError.new("Syntax error near #{data[p..-2].inspect}.") if p != pe
   if (p < pe) {
     p = p - 3;
     if (p < data) p = data;
     rb_raise(rb_SyntaxError, "Syntax error near %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(p , pe - p - 1))));
+  }
+
+  if (par_count > 0) {
+    // raise QueryBuilder::SyntaxError.new("Missing closing parenthesis in #{data[0..-2].inspect}.")
+    rb_raise(rb_SyntaxError, "Missing closing parenthesis in %s.", RSTRING_PTR(rb_str_inspect(rb_str_new(data , pe - data - 1))));
   }
 
   return rb_ary_entry(stack, 0);

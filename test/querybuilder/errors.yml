@@ -30,3 +30,12 @@ or_clause_with_filter:
   src: "recipients where name = 'foo' or objects"
   sxp: '[:query, [:filter, [:relation, "recipients"], [:or, [:"=", [:field, "name"], [:string, "foo"]], [:field, "objects"]]]]'
   res: "Unknown field 'objects'."
+
+
+unmatched_open_par:
+  src: "objects where event_at is null or (name is not null"
+  res: "Missing closing parenthesis in \"objects where event_at is null or (name is not null\"."
+
+unmatched_close_par:
+  src: "objects where event_at is null )"
+  res: "Syntax error near \"ll )\"."
