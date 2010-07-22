@@ -6,3 +6,4 @@ lib/*.o
 lib/*.bundle
 lib/*.so
 coverage
+log

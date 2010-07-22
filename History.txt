@@ -1,9 +1,10 @@
-== 0.8.0
+== 0.8.0 2010-07-22
 
 * Major enhancements:
   * Better handling of mixed 'or' clauses.
   * Allowing ':' in relations and scopes.
   * Raises a SyntaxError on non-closing parenthesis.
+  * Started to fix some issues with for PostgreSQL.
 
 == 0.7.0 2010-05-27
 

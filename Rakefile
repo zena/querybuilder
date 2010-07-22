@@ -74,8 +74,9 @@ end
 desc "Build native extensions"
 task :build => :ragel do
   [
-    "ruby lib/extconf.rb",
-    "cd lib && make",
+    'ruby lib/extconf.rb',
+    'mv Makefile lib/',
+    'cd lib && make',
   ].each do |cmd|
     puts cmd
     system cmd

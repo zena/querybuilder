@@ -1,8 +1,16 @@
+require 'active_record'
+
 module QueryBuilder
   class Query
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
-                  :pagination_key, :main_class
+                  :pagination_key, :main_class, :context
+
+    class << self
+      def adapter
+        @adapter ||= ActiveRecord::Base.connection.class.name.split('::').last[/(.+)Adapter/,1].downcase
+      end
+    end
 
     def initialize(processor_class)
       @processor_class = processor_class
@@ -169,7 +177,7 @@ module QueryBuilder
       def get_alias(use_name, table_name = nil, avoid_alias = true)
         table_name ||= use_name
         @table_alias[use_name] ||= []
-        if avoid_alias && !@tables.include?(use_name)
+        if avoid_alias && !@tables.include?(table_name)
           alias_name = use_name
         elsif @tables.include?(use_name)
           # links, li1, li2, li3
@@ -216,10 +224,21 @@ module QueryBuilder
 
         group = @group
         if !group && @distinct
-          group = @tables.size > 1 ? " GROUP BY #{main_table}.id" : " GROUP BY id"
+          key =  @tables.size > 1 ? "#{main_table}.id" : 'id'
+
+          case self.class.adapter
+          when 'postgresql'
+            if @order.to_s =~ /ORDER BY (.*)/
+              keys = $1.split(',').map {|k| k[/^(.*)\s/,1]}
+              key = ([key] + keys).join(',')
+            end
+            distinct = " DISTINCT ON (#{key})"
+          else
+            group    = " GROUP BY #{key}"
+          end
         end
 
-        "SELECT #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement
