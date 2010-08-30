@@ -32,8 +32,14 @@ class DummyQueryBuilder < Test::Unit::TestCase
     should 'return a query object on query' do
       assert_kind_of QueryBuilder::Query, subject.new('objects').query
     end
+
+    should 'overwrite defaults' do
+      assert_equal '%Q{SELECT objects.* FROM objects}', subject.new('objects', :default => {:scope => 'site'}).query.to_s
+      assert_equal '[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ?}, project_id]', subject.new('objects', :default => {:scope => 'project'}).query.to_s
+      assert_equal '[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ?}, id]', subject.new('objects').query.to_s
+    end
   end
-  
+
   context 'Including QueryBuilder' do
     context 'in a class' do
       subject do
@@ -41,19 +47,19 @@ class DummyQueryBuilder < Test::Unit::TestCase
           include QueryBuilder
         end
       end
-    
+
       should 'receive class method query_compiler' do
         assert_nothing_raised do
           subject.query_compiler = 'Foo'
           assert_equal 'Foo', subject.query_compiler
         end
       end
-      
+
       should 'receive class method query_compiler on sub_class' do
         sub_class = Class.new(subject)
         subject.query_compiler = 'Foo'
         assert_equal 'Foo', subject.query_compiler
-        
+
         sub_class.query_compiler = 'Bar'
         assert_equal 'Bar', sub_class.query_compiler
         assert_equal 'Foo', subject.query_compiler

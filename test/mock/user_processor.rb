@@ -14,7 +14,7 @@ class UserProcessor < QueryBuilder::Processor
   def process_relation(relation)
     case relation
     when 'objects'
-      this.apply_scope(default[:scope]) if context[:last]
+      this.apply_scope(default(:scope)) if context[:last]
       add_table('objects')
       @query.add_filter "#{table('objects')}.id = #{field_or_attr('node_id')}"
       change_processor 'DummyProcessor'

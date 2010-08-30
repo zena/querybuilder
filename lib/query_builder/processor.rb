@@ -128,6 +128,7 @@ module QueryBuilder
     }
 
     def initialize(source, opts = {})
+      @default = opts.delete(:default) || {}
       @opts = opts
       @rubyless_helper = @opts[:rubyless_helper]
       if source.kind_of?(Processor)
@@ -187,8 +188,8 @@ module QueryBuilder
         @this = processor
       end
 
-      def default
-        self.class.defaults
+      def default(key)
+        @default[key] || self.class.defaults[key]
       end
 
       def process(sxp)
@@ -287,7 +288,7 @@ module QueryBuilder
       # [letters from friends] or [images in project]
       def process_query(args)
         this.process(args)
-        if @query.order.nil? && order = this.default[:order]
+        if @query.order.nil? && order = this.default(:order)
           sxp = Parser.parse("foo order by #{order}")
           order = sxp[1]
           order[1] = [:void] # replace [:relation, "foo"] by [:void]
@@ -732,7 +733,7 @@ module QueryBuilder
             context[:scope_type] = nil
             # post scope
             @query.add_table(use_name, table_name, avoid_alias)
-            apply_scope(context[:scope] || default[:scope])
+            apply_scope(context[:scope] || default(:scope))
           else
             # scope already applied / skip
             @query.add_table(use_name, table_name, avoid_alias)
