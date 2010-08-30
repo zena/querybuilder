@@ -1,3 +1,8 @@
+== 0.5.9 2010-08-30
+
+* 1 major enhancement
+  * Bug fix when using more then one 'group' in custom query definition file.
+
 == 0.5.8 2010-02-15
 
 * 1 major enhancement

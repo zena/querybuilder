@@ -10,7 +10,7 @@ Syntax of a query is "RELATION [where ...|] [in ...|from SUB_QUERY|]".
 =end
 class QueryBuilder
   attr_reader :tables, :where, :errors, :join_tables, :distinct, :final_parser, :page_size
-  VERSION = '0.5.8'
+  VERSION = '0.5.9'
 
   @@main_table = {}
   @@main_class = {}
@@ -69,7 +69,7 @@ class QueryBuilder
             custom_query_groups = $1
             definitions = YAML::load(File.read(File.join(dir,file)))
             custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
-            definitions.each do |klass,v|
+            definitions.each do |klass, query_list|
               constant = nil
               klass.split('::').each do |m|
                 constant = constant ? constant.const_get(m) : Module.const_get(m)
@@ -80,8 +80,8 @@ class QueryBuilder
               custom_query_groups.each do |custom_query_group|
                 @@custom_queries[klass][custom_query_group] ||= {}
                 klass_queries = @@custom_queries[klass][custom_query_group]
-                v.each do |k,v|
-                  klass_queries[k] = v
+                query_list.each do |k, query|
+                  klass_queries[k] = query
                 end
               end
             end
