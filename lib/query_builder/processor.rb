@@ -77,7 +77,7 @@ module QueryBuilder
               custom_query_groups = $1
               definitions = YAML::load(File.read(File.join(dir,file)))
               custom_query_groups = [definitions.delete('groups') || definitions.delete('group') || custom_query_groups].flatten
-              definitions.each do |klass,v|
+              definitions.each do |klass, query_list|
                 begin
                   klass = QueryBuilder.resolve_const(klass)
                   klass = klass.query_compiler if klass.respond_to?(:query_compiler)
@@ -89,8 +89,8 @@ module QueryBuilder
                 custom_query_groups.each do |custom_query_group|
                   custom_queries[klass][custom_query_group] ||= {}
                   klass_queries = custom_queries[klass][custom_query_group]
-                  v.each do |k,v|
-                    klass_queries[k] = v
+                  query_list.each do |query_name, query|
+                    klass_queries[query_name] = query
                   end
                 end
               end
