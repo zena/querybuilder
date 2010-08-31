@@ -5,17 +5,18 @@
 
 Gem::Specification.new do |s|
   s.name = %q{querybuilder}
-  s.version = "0.8.2"
+  s.version = "0.8.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Gaspard Bucher"]
-  s.date = %q{2010-08-30}
+  s.date = %q{2010-08-31}
   s.description = %q{QueryBuilder is an interpreter for the "pseudo sql" language. This language
     can be used for two purposes:
 
      1. protect your database from illegal SQL by securing queries
      2. ease writing complex relational queries by abstracting table internals}
   s.email = %q{gaspard@teti.ch}
+  s.extensions = ["lib/extconf.rb"]
   s.extra_rdoc_files = [
     "README.rdoc"
   ]

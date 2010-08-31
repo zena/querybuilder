@@ -17,6 +17,7 @@ static VALUE _raw;
 static VALUE _function;
 static VALUE _relation;
 static VALUE _is;
+static VALUE _in;
 static VALUE _interval;
 static VALUE _scope;
 static VALUE _filter;
@@ -66,6 +67,7 @@ void Init_querybuilder_ext() {
   STORE_SYM(function);
   STORE_SYM(relation);
   STORE_SYM(is);
+  STORE_SYM(in);
   STORE_SYM(interval);
   STORE_SYM(scope);
   STORE_SYM(filter);
@@ -185,6 +187,11 @@ void Init_querybuilder_ext() {
     tmp = ID2SYM(rb_to_id(rb_funcall(tmp, _downcase, 0)));
     APPLY_OP(tmp);
     // last = apply_op(stack, str_buf.downcase.to_sym)
+  }
+
+  action in_op {
+    APPLY_OP(_in);
+    // last = apply_op(stack, :in)
   }
 
   action is {

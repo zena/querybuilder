@@ -121,3 +121,21 @@ filter_empty_literal:
   src: "objects where \"\" = ''"
   sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:dstring, ""], [:string, ""]]]]'
   sql: "SELECT objects.* FROM objects WHERE '' = '' AND objects.parent_id = 123"
+
+filter_in_literal:
+  src: "objects where id in (1, 2 , 3,4) in site"
+  sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:in, [:field, "id"], [:integer, "1"], [:integer, "2"], [:integer, "3"], [:integer, "4"]]], "site"]]'
+  sql: "SELECT objects.* FROM objects WHERE objects.id IN (1,2,3,4)"
+
+filter_in_string:
+  src: "objects where name in ('paul', 'john') in site"
+  sql: "SELECT objects.* FROM objects WHERE objects.name IN ('paul','john')"
+
+filter_in_single_literal:
+  src: "objects where id in (1) in site"
+  sql: "SELECT objects.* FROM objects WHERE objects.id IN (1)"
+
+filter_not_in_literal:
+  src: "objects where id not in (1, 2 , 3,4) in site"
+  sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:not, [:in, [:field, "id"], [:integer, "1"], [:integer, "2"], [:integer, "3"], [:integer, "4"]]]], "site"]]'
+  sql: "SELECT objects.* FROM objects WHERE objects.id NOT IN (1,2,3,4)"

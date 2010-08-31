@@ -69,6 +69,10 @@ module QueryBuilder
       str_buf = ""
     }
 
+    action in_op {
+      last = apply_op(stack, :in)
+    }
+
     action is {
       # We need the 'is' operator to avoid confusion with 'in site'.
       last = apply_op(stack, :is)

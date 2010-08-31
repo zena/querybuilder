@@ -23,8 +23,10 @@
   operator = (op %operator | text_op %operator ws+ );
   interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a %interval 's'?;
   value    = ((field | string | number | rubyless) interval? | ws* '(' >goto_expr_p ws* ')');
+  in_value = (string | number | rubyless) (ws* ',' (string | number | rubyless))*;
+  in_expr  = ws+ ('not' $str_a %operator ws+)? 'in' ws* '(' %in_op in_value ws* ')'; # wait until '(' to execute 'operator' to avoid confusion with scope
   is_null  = ws+ 'is' %is ws+ (('not' ws+)* ('null' | 'NULL')) $str_a %raw;
-  expr     = value (operator value | is_null)*;
+  expr     = value (operator value | in_expr | is_null)*;
   expr_p  := expr ws* ')' $expr_close;
 
   relation = ws* var %relation;

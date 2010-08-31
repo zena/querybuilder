@@ -60,7 +60,7 @@ module QueryBuilder
       end
 
       def pop_stack(stack, op)
-        # debug_stack(stack, op)
+        #debug_stack(stack, op)
         stack_op = stack.last.first
         while OP_PRECEDENCE[op] <= OP_PRECEDENCE[stack_op]
           stack.pop

@@ -501,9 +501,20 @@ module QueryBuilder
         expr.upcase
       end
 
+      def process_in(*args)
+        field  = process args.shift
+        values = args.map {|val| process(val)}
+        "#{field} IN (#{values.join(',')})"
+      end
+
       def process_not(expr)
         if expr.first == :like
           "#{this.process(expr[1])} NOT LIKE #{this.process(expr[2])}"
+        elsif expr.first == :in
+          args = expr[1..-1]
+          field  = process args.shift
+          values = args.map {|val| process(val)}
+          "#{field} NOT IN (#{values.join(',')})"
         else
           "NOT #{this.process(expr)}"
         end
