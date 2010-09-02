@@ -43,7 +43,7 @@ xml/html environments):
 
   '+' | '-' | '<' | '<=' | '=' | '>=' | '>'
   'or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt'
-  'like' | 'not like' | 'match'
+  'like' | 'not like' | 'match' | 'in'
 
 This lets you build complex queries like:
 
