@@ -53,6 +53,20 @@ module QueryBuilder
       @where << filter
     end
 
+    # Return all explicit selected keys (currently selection is only available in custom queries)
+    # For example, sql such as "SELECT form.*, MAX(form.date) AS last_date" would provice 'last_date' key.
+    def select_keys
+      @select_keys ||= (@select || []).map do |field|
+        if field =~ %r{AS\s+(.+)$}
+          $1
+        elsif field =~ %r{^(\w+\.|)([^\*]+)$}
+          $2
+        else
+          nil
+        end
+      end.compact
+    end
+
     # Convert query object to a string. This string should then be evaluated.
     #
     # ==== Parameters

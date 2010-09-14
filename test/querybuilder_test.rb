@@ -67,6 +67,20 @@ class DummyQueryBuilder < Test::Unit::TestCase
     end
   end # Including QueryBuilder
 
+  context 'A query with custom select' do
+    subject do
+      DummyProcessor.new('star where number < 4', :custom_query_group => 'test').query
+    end
+
+    should 'respond to select_keys' do
+      assert_equal %w{a number c}, subject.select_keys
+    end
+    
+    should 'not include star keys' do
+      assert !subject.select_keys.include?('*')
+    end
+  end # A query with custom select
+
 
   def yt_parse(key, source, opts)
     opts = {:rubyless_helper => self}.merge(Hash[*(opts.map{|k,v| [k.to_sym, v]}.flatten)])

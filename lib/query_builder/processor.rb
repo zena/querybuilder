@@ -6,7 +6,7 @@ module QueryBuilder
 
     class << self
       # class variable
-      attr_accessor :main_table, :main_class, :custom_queries
+      attr_accessor :main_table, :main_class, :custom_queries, :custom_query_files
       attr_accessor :defaults
       attr_accessor :before_process_callbacks, :after_process_callbacks
 
@@ -68,9 +68,16 @@ module QueryBuilder
       # Once loaded, this 'custom query' can be used in a query like:
       #   "images from abc where a > 54"
       def load_custom_queries(directories)
+        # lazy loading (evaluation happens on first query)
+        self.custom_query_files ||= []
+        self.custom_query_files << directories
+      end
+
+      def load_custom_queries!
+        return unless list = self.custom_query_files
         klass = nil
         self.custom_queries ||= {}
-        Dir.glob(directories).each do |dir|
+        Dir.glob(list.flatten).each do |dir|
           if File.directory?(dir)
             Dir.foreach(dir) do |file|
               next unless file =~ /(.+).yml$/
@@ -97,6 +104,7 @@ module QueryBuilder
             end
           end
         end
+        self.custom_query_files = nil
       rescue NameError => err
         raise ArgumentError.new("Invalid Processor class (#{klass})")
       end
@@ -427,7 +435,7 @@ module QueryBuilder
 
       def process_attr(fld_name)
         if @rubyless_helper
-          insert_bind(RubyLess.translate(fld_name, @rubyless_helper))
+          insert_bind(RubyLess.translate(@rubyless_helper, fld_name))
         else
           insert_bind(fld_name)
         end
@@ -449,14 +457,14 @@ module QueryBuilder
 
       def process_dstring(string)
         raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
-        res = RubyLess.translate_string(string, helper)
+        res = RubyLess.translate_string(helper, string)
         res.literal ? quote(res.literal) : insert_bind(res)
       end
 
       def process_rubyless(string)
         # compile RubyLess...
         raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
-        res = RubyLess.translate(string, helper)
+        res = RubyLess.translate(helper, string)
         res.literal ? quote(res.literal) : insert_bind(res)
       end
 
@@ -656,13 +664,13 @@ module QueryBuilder
         end
       end
 
-      def custom_query(relation)
+      def custom_query_without_loading(relation)
         return false unless first? && last?  # current safety net until "from" is correctly implemented and tested
 
         custom_queries = self.class.custom_queries[self.class]
         if custom_queries &&
            custom_queries[@opts[:custom_query_group]] &&
-           custom_query = custom_queries[@opts[:custom_query_group]][relation]
+           custom_query = custom_queries[@opts[:custom_query_group]][relation.singularize]
 
           custom_query.each do |k,v|
             @query.send(:instance_variable_set, "@#{k}", prepare_custom_query_arguments(k.to_sym, v))
@@ -673,6 +681,15 @@ module QueryBuilder
           @query.rebuild_attributes_hash!
           true
         end
+      end
+
+      # Method executed only once, then alias resolves to custom_query_without_loading.
+      def custom_query(*args)
+        self.class.load_custom_queries!
+        self.class.class_eval do
+          alias custom_query custom_query_without_loading
+        end
+        custom_query_without_loading(*args)
       end
 
     private

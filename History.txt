@@ -1,3 +1,10 @@
+== 0.9.0 2010-09-14
+
+* 1 Major enhancements
+  * Lazy loading of custom queries.
+  * Select keys introspection in Query class.
+  * Using new RubyLess.translate API.
+
 == 0.8.3 2010-08-31
 
 * 2 Major enhancements

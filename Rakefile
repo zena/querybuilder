@@ -16,7 +16,7 @@ begin
     gem.email = "gaspard@teti.ch"
     gem.homepage = "http://zenadmin.org/524"
     gem.authors = ["Gaspard Bucher"]
-    gem.add_dependency "rubyless", ">= 0.5.0"
+    gem.add_dependency "rubyless", ">= 0.7.0"
     gem.add_development_dependency "shoulda", ">= 0"
     gem.add_development_dependency "yamltest", ">= 0.5.0"
     gem.extensions << 'lib/extconf.rb'

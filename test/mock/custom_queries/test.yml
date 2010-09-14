@@ -11,17 +11,32 @@ DummyProcessor:
       - '2'
       - '3'
     order: a ASC
-    
+
+  star:
+    select:
+      - test.*
+      - '*'
+      - a
+      - 34 AS number
+      - c
+    tables:
+      - test
+    where:
+      - '1'
+      - '2'
+      - '3'
+    order: a ASC
+
   two_table:
     main_table: 'table_one'
     select:
       - x AS x
       - IF(table_one.y,table_one.y,table_two.z) AS y
       - table_two.name
-    tables:  
+    tables:
       - table_two
       - table_one
-      
+
   two_table_main:
     main_table: foo
     select:
