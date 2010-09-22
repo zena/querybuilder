@@ -86,12 +86,33 @@ equation_and_or_par:
   res: "[%Q{SELECT objects.* FROM objects WHERE (objects.event_at > '2006-04-01' OR objects.name LIKE 'foo%') AND objects.parent_id = ? GROUP BY id}, id]"
 
 or_with_same_tables:
-  src: "objects where index = 5 or index = 7"
-  res: "[%Q{SELECT objects.* FROM index,objects WHERE ((index.value = 5 AND index.node_id = objects.id) OR (index.value = 7 AND index.node_id = objects.id)) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+  src: "objects where age = 5 or age = 7"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,objects WHERE ((id1.value = 5 AND id1.key = 'age' AND id1.node_id = objects.id) OR (id1.value = 7 AND id1.key = 'age' AND id1.node_id = objects.id)) AND objects.parent_id = ? GROUP BY objects.id}, id]"
 
 or_with_missing_table:
-  src: "objects where index = 5 or 7"
-  res: "[%Q{SELECT objects.* FROM index,objects WHERE ((index.value = 5 AND index.node_id = objects.id) OR (7 AND index.id = 0)) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+  src: "objects where age = 5 or 7"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,objects WHERE ((id1.value = 5 AND id1.key = 'age' AND id1.node_id = objects.id) OR (7 AND id1.id = 0)) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+
+or_different_table:
+  src: "objects where age = 5 or size = 15"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,objects WHERE ((id1.value = 5 AND id1.key = 'age' AND id1.node_id = objects.id) OR (id1.value = 15 AND id1.key = 'size' AND id1.node_id = objects.id)) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+
+and_with_same_tables:
+  src: "objects where age > 5 and age < 7"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,objects WHERE id1.value > 5 AND id1.value < 7 AND id1.key = 'age' AND id1.node_id = objects.id AND objects.parent_id = ?}, id]"
+
+and_with_same_tables_different_key:
+  src: "objects where age > 5 and size = 10"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,idx_nodes AS id2,objects WHERE id1.value > 5 AND id2.value = 10 AND id2.key = 'size' AND id2.node_id = objects.id AND id1.key = 'age' AND id1.node_id = objects.id AND objects.parent_id = ?}, id]"
+
+
+filter_and_order_index:
+  src: "objects where age > 5 order by age asc"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,objects WHERE id1.value > 5 AND id1.key = 'age' AND id1.node_id = objects.id AND objects.parent_id = ? ORDER BY id1.value ASC}, id]"
+
+order_without_idx_filter:
+  src: "objects order by age asc"
+  res: "[%Q{SELECT objects.* FROM idx_nodes AS id1,objects WHERE id1.key = 'age' AND id1.node_id = objects.id AND objects.parent_id = ? ORDER BY id1.value ASC}, id]"
 
 equation_par:
   src: "objects where (1 > 2 or 2 > 3) and 4 = 5 "

@@ -60,3 +60,9 @@ it_should_paginate_the_entries:
     custom_query_group: test
   src: "abc limit 4 paginate foo"
   res: "[%Q{SELECT a,34 AS number,c FROM test WHERE 3 AND 2 AND 1 ORDER BY a ASC LIMIT 4 OFFSET ?}, ((foo.to_i > 0 ? foo.to_i : 1)-1)*4]"
+
+it_should_use_alias_in_filter:
+  context:
+    custom_query_group: test
+  src: "abc where number > 10"
+  res: "%Q{SELECT a,34 AS number,c FROM test WHERE (34) > 10 AND 3 AND 2 AND 1 ORDER BY a ASC}"

@@ -27,23 +27,27 @@ class DummyProcessor < QueryBuilder::Processor
   end
 
   # Overwrite this and take care to check for valid fields.
-  def process_field(fld_name)
-    if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a'].include?(fld_name)
-      "#{table}.#{fld_name}"
-    elsif fld_name == 'REF_DATE'
+  def process_field(field_name)
+    if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a'].include?(field_name)
+      "#{table}.#{field_name}"
+    elsif field_name == 'REF_DATE'
       context[:ref_date] ? insert_bind(context[:ref_date]) : 'now()'
-    elsif fld_name == 'index'
-      add_table('index')
-      add_filter "#{table('index')}.node_id = #{field_or_attr('id', table(self.class.main_table))}"
-      "#{table('index')}.value"
+    elsif %w{age size}.include?(field_name)
+      tbl = add_key_value_table('idx', 'idx_nodes', field_name) do |tbl_name|
+        # This block is only executed once
+        add_filter "#{tbl_name}.node_id = #{table}.id"
+        add_filter "#{tbl_name}.key = #{quote(field_name)}"
+      end
+
+      "#{tbl}.value"
     else
       super # raises an error
     end
   end
 
-  def resolve_missing_table(query, table_alias, table_name)
+  def resolve_missing_table(query, table_name, table_alias)
     case table_name
-    when 'index'
+    when 'idx_nodes'
       query.where.insert 0, "#{table_alias}.id = 0"
     when 'links'
       query.where.insert 0, "#{table_alias}.id = 0"

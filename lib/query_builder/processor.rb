@@ -138,7 +138,8 @@ module QueryBuilder
     def initialize(source, opts = {})
       @default = opts.delete(:default) || {}
       @opts = opts
-      @rubyless_helper = @opts[:rubyless_helper]
+      @rubyless_helper  = @opts[:rubyless_helper]
+
       if source.kind_of?(Processor)
         # experimental: class change
         @context  = source.context
@@ -739,6 +740,7 @@ module QueryBuilder
         end
       end
 
+      # Add a new table and apply scoping when needed
       def add_table(use_name, table_name = nil)
         if use_name == main_table && first?
           # we are now using final table
@@ -771,6 +773,12 @@ module QueryBuilder
           # can only scope main_table
           @query.add_table(use_name, table_name)
         end
+      end
+
+      # Add a table to 'import' a key/value based field. This method ensures that
+      # a given field is only included once for each context.
+      def add_key_value_table(use_name, index_table, key = :any, &block)
+        @query.add_key_value_table(use_name, index_table, key, &block)
       end
 
       # Hook to use dummy scopes (such as 'in site')

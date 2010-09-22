@@ -4,7 +4,7 @@ module QueryBuilder
   class Query
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
-                  :pagination_key, :main_class, :context
+                  :pagination_key, :main_class, :context, :key_value_tables
 
     class << self
       def adapter
@@ -19,6 +19,7 @@ module QueryBuilder
       @join_tables = {}
       @needed_join_tables = {}
       @attributes_alias   = {}
+      @key_value_tables   = {}
       @where = []
     end
 
@@ -119,6 +120,23 @@ module QueryBuilder
       add_alias_to_tables(table_name || use_name, alias_name)
     end
 
+    # Add a table to 'import' a key/value based field. This method ensures that
+    # a given field is only included once for each context.
+    def add_key_value_table(use_name, index_table, key, &block)
+      key_tables = (@key_value_tables[table] ||= {})
+      key_table = (key_tables[use_name] ||= {})
+      if alias_table = key_table[key]
+        # done, the index_table has been used for the given key in the current context
+      else
+        # insert the new table
+        add_table(use_name, index_table, false)
+        alias_table = key_table[key] = table(use_name)
+        # Let caller configure the filter (join).
+        block.call(alias_table)
+      end
+      alias_table
+    end
+
     def add_select(clause)
       @select ||= []
       @select << clause
@@ -130,7 +148,8 @@ module QueryBuilder
     end
 
     # Use this method to add a join to another table (added only once for each join name).
-    # versions LEFT JOIN dyn_attributes ON ...
+    # nodes JOIN idx_nodes_string AS id1 ON ...
+    # FIXME: can we remove this ? It seems buggy (JOIN in or clauses)
     def needs_join_table(table_name1, type, table_name2, clause, join_name = nil)
       join_name ||= "#{table_name1}=#{type}=#{table_name2}"
       @needed_join_tables[join_name] ||= {}
@@ -149,10 +168,10 @@ module QueryBuilder
       end
     end
 
-    # Duplicate query, avoiding mutual
+    # Duplicate query, avoiding sharing some arrays and hash
     def dup
       other = super
-      %w{tables table_alias where}.each do |k|
+      %w{tables table_alias where tables key_value_tables}.each do |k|
         other.send("#{k}=", other.send(k).dup)
       end
       other
