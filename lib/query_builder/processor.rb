@@ -151,7 +151,7 @@ module QueryBuilder
 
         @context = opts.merge(:first => true, :last => true)
         @query = Query.new(self.class)
-        @query.main_class = @opts[:main_class] if @opts[:main_class]
+        @query.main_class = @opts[:main_class] || resolve_main_class(self.class.main_class)
         before_process
 
         process_all
@@ -572,7 +572,7 @@ module QueryBuilder
         context[:processing] = :paginate
         fld = process(paginate_fld)
         if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])
-          @query.page_size = [2, page_size.to_i].max
+          @query.page_size = [1, page_size.to_i].max
           @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
           @query.pagination_key ||= paginate_fld.last
         else
@@ -613,7 +613,11 @@ module QueryBuilder
           value
         end
       end
-
+      
+      def resolve_main_class(class_name)
+        QueryBuilder.resolve_const(class_name)
+      end
+      
       def insert_bind(str)
         self.class.insert_bind(str)
       end
@@ -653,7 +657,7 @@ module QueryBuilder
           end
 
           @query.processor_class = processor.class
-          @query.main_class = QueryBuilder.resolve_const(processor.class.main_class)
+          @query.main_class = processor.resolve_main_class(processor.class.main_class)
           update_processor(processor)
         end
       end

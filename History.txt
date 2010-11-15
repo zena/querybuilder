@@ -1,3 +1,8 @@
+== 0.9.3 2010-11-15
+
+* 1 Minor enhancement
+  * Fixed pagination bug when page count is 1.
+
 == 0.9.2 2010-10-06
 
 * 1 Minor enhancement
