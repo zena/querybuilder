@@ -162,7 +162,7 @@ module QueryBuilder
           @query.limit = " LIMIT #{limit}"
         end
       else
-        raise "Cannot use #{source.class} as source: expected a String or QueryBuilder::Processor"
+        raise QueryBuilder::Error.new("Cannot use #{source.class} as source: expected a String or QueryBuilder::Processor")
       end
     end
 
@@ -613,11 +613,11 @@ module QueryBuilder
           value
         end
       end
-      
+
       def resolve_main_class(class_name)
         QueryBuilder.resolve_const(class_name)
       end
-      
+
       def insert_bind(str)
         self.class.insert_bind(str)
       end
