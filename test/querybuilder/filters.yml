@@ -160,3 +160,7 @@ filter_not_in_literal:
   src: "objects where id not in (1, 2 , 3,4) in site"
   sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:not, [:in, [:field, "id"], [:integer, "1"], [:integer, "2"], [:integer, "3"], [:integer, "4"]]]], "site"]]'
   sql: "SELECT objects.* FROM objects WHERE objects.id NOT IN (1,2,3,4)"
+
+filter_quote_string:
+  src: "objects where name = \"l'avion\""
+  sql: "SELECT objects.* FROM objects WHERE objects.name = 'l''avion' AND objects.parent_id = 123"

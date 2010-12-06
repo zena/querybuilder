@@ -1,4 +1,9 @@
-== 0.9.4
+== 0.9.5
+
+* Major enhancements
+  * Better quoting when connection quote uses backslash (eval removes backslash).
+
+== 0.9.4 2010-12-02
 
 * 1 Minor enhancement
   * Should only raise QueryBuilder::Error on initialize.

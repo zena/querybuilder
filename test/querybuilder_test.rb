@@ -16,7 +16,6 @@ class DummyQueryBuilder < Test::Unit::TestCase
   def id;         123;  end
   def parent_id;  333;  end
   def project_id; 9999; end
-  def connection; self; end
 
   context 'A query processor' do
     subject do
@@ -75,7 +74,7 @@ class DummyQueryBuilder < Test::Unit::TestCase
     should 'respond to select_keys' do
       assert_equal %w{a number c}, subject.select_keys
     end
-    
+
     should 'not include star keys' do
       assert !subject.select_keys.include?('*')
     end

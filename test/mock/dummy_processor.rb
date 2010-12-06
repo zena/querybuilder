@@ -173,9 +173,6 @@ end
 
 
 class DummyClass
-  # Mock connection and quoting
-  def self.connection; self; end
-  def self.quote(obj)
-    obj.kind_of?(String) ? "'#{obj}'" : obj
-  end
+  # Mock connection
+  def self.connection; ActiveRecord::Base.connection; end
 end

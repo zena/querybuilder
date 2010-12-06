@@ -812,7 +812,9 @@ module QueryBuilder
       end
 
       def quote(arg)
-        connection.quote(arg)
+        # we must backslash twice because 'eval' will take one out:
+        # 'l\\'avion' ==> 'l\'avion' ==> ok
+        connection.quote(arg).gsub('\\','\\\\\\\\') # we need 8
       end
 
       def connection
