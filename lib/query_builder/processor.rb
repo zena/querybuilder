@@ -568,7 +568,7 @@ module QueryBuilder
 
       def process_paginate(query, paginate_fld)
         process(query)
-        raise QueryBuilder::SyntaxError.new("Invalid paginate clause '#{paginate}' (used without limit).") unless @query.limit
+        raise QueryBuilder::SyntaxError.new("Invalid paginate clause (used without limit).") unless @query.limit
         context[:processing] = :paginate
         fld = process(paginate_fld)
         if fld && (page_size = @query.limit[/ LIMIT (\d+)/,1])

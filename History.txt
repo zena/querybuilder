@@ -2,6 +2,7 @@
 
 * Major enhancements
   * Better quoting when connection quote uses backslash (eval removes backslash).
+  * Fixed a bug when paginating without a limit clause.
 
 == 0.9.4 2010-12-02
 

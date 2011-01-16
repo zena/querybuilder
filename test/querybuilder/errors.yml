@@ -14,6 +14,10 @@ offset_without_limit:
   src: "objects in project offset 3"
   res: "Invalid offset (used without limit)."
 
+paginate_without_limit:
+  src: "objects in site paginate p"
+  res: "Invalid paginate clause (used without limit)."
+  
 legacy_many_clauses:
   src: letters or foo
   res: "Unknown relation 'foo'."
