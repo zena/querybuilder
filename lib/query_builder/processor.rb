@@ -88,14 +88,14 @@ module QueryBuilder
                 begin
                   klass = QueryBuilder.resolve_const(klass)
                   klass = klass.query_compiler if klass.respond_to?(:query_compiler)
-                  raise ArgumentError.new("Invalid Processor class '#{klass}' in '#{file}' custom query. Should be a descendant of QueryBuilder::Processor.") unless klass.ancestors.include?(Processor)
+                  raise ArgumentError.new("Invalid Processor class '#{klass}' in '#{file}' custom query. Should be a descendant of QueryBuilder::Processor or respond to query_compiler.") unless klass.ancestors.include?(Processor)
                 rescue NameError
                   raise ArgumentError.new("Unknown Processor class '#{klass}' in '#{file}' custom query.")
                 end
-                custom_queries[klass] ||= {}
+                custom_queries = klass.custom_queries
                 custom_query_groups.each do |custom_query_group|
-                  custom_queries[klass][custom_query_group] ||= {}
-                  klass_queries = custom_queries[klass][custom_query_group]
+                  custom_queries[custom_query_group] ||= {}
+                  klass_queries = custom_queries[custom_query_group]
                   query_list.each do |query_name, query|
                     klass_queries[query_name] = query
                   end
@@ -105,10 +105,8 @@ module QueryBuilder
           end
         end
         self.custom_query_files = nil
-      rescue NameError => err
-        raise ArgumentError.new("Invalid Processor class (#{klass})")
       end
-    end
+    end # class << self
 
     OPERATOR_TO_METHOD = {
       :"!" => :not,
@@ -672,7 +670,7 @@ module QueryBuilder
       def custom_query_without_loading(relation)
         return false unless first? && last?  # current safety net until "from" is correctly implemented and tested
 
-        custom_queries = self.class.custom_queries[self.class]
+        custom_queries = self.class.custom_queries
         if custom_queries &&
            custom_queries[@opts[:custom_query_group]] &&
            custom_query = custom_queries[@opts[:custom_query_group]][relation.singularize]
