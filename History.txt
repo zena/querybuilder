@@ -4,6 +4,7 @@
   * Better quoting when connection quote uses backslash (eval removes backslash).
   * Fixed a bug when paginating without a limit clause.
   * Fixed a bug where custom_queries would not pre load.
+  * Added support for digits in field names.
 
 == 0.9.4 2010-12-02
 

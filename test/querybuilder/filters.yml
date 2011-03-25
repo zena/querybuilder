@@ -164,3 +164,9 @@ filter_not_in_literal:
 filter_quote_string:
   src: "objects where name = \"l'avion\""
   sql: "SELECT objects.* FROM objects WHERE objects.name = 'l''avion' AND objects.parent_id = 123"
+
+
+field_with_digits:
+  src: "objects where idx_foo1 is not null"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:is, [:field, "idx_foo1"], [:raw, "not null"]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.idx_foo1 IS NOT NULL AND objects.parent_id = ?}, id]"

@@ -162,6 +162,10 @@ module QueryBuilder
       else
         raise QueryBuilder::Error.new("Cannot use #{source.class} as source: expected a String or QueryBuilder::Processor")
       end
+    rescue QueryBuilder::Error => err
+      raise err
+    rescue Exception => err
+      raise QueryBuilder::Error.new("Exception raised while processing '#{source}' (#{err.message})")
     end
 
     protected
