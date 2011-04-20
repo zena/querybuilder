@@ -718,7 +718,9 @@ module QueryBuilder
       # Parse custom query arguments for special keywords (RELATION, NODE_ATTR, ETC)
       # There might be a better way to use custom queries that avoids this parsing
       def prepare_custom_query_arguments(key, value)
-        if value.kind_of?(Array)
+        if key == :main_class
+          resolve_main_class(value)
+        elsif value.kind_of?(Array)
           value.map {|e| parse_custom_query_argument(key, e)}
         elsif value.kind_of?(Hash)
           value.each do |k,v|
