@@ -47,6 +47,15 @@ module QueryBuilder
       str_buf = ""
     }
 
+    action select_one {
+      last = apply_op(stack, :select_one)
+      last << str_buf
+      str_buf = ""
+      # last should be [:select, ...], not the [:select_one] just added.
+      stack.pop
+      last = stack.last
+    }
+
     action function {
       last = apply_op(stack, :function)
       str_buf = ""
@@ -87,6 +96,11 @@ module QueryBuilder
     action filter {
       last = apply_op(stack, :filter)
       clause_state = :filter
+    }
+
+    action select {
+      last = apply_op(stack, :select)
+      clause_state = :select
     }
 
     action goto_expr_p {

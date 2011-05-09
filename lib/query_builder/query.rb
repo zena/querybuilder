@@ -138,7 +138,8 @@ module QueryBuilder
     end
 
     def add_select(clause)
-      @select ||= []
+      @select ||= ["#{main_table}.*"]
+      # FIXME: verify that there is no name clash between fname and table columns
       @select << clause
       rebuild_attributes_hash!
     end

@@ -13,6 +13,7 @@ static VALUE _integer;
 static VALUE _real;
 static VALUE _field;
 static VALUE _method;
+static VALUE _select_one;
 static VALUE _raw;
 static VALUE _function;
 static VALUE _relation;
@@ -21,6 +22,7 @@ static VALUE _in;
 static VALUE _interval;
 static VALUE _scope;
 static VALUE _filter;
+static VALUE _select;
 static VALUE _offset;
 static VALUE _param;
 static VALUE _paginate;
@@ -63,6 +65,7 @@ void Init_querybuilder_ext() {
   STORE_SYM(real);
   STORE_SYM(field);
   STORE_SYM(method);
+  STORE_SYM(select_one);
   STORE_SYM(raw);
   STORE_SYM(function);
   STORE_SYM(relation);
@@ -71,6 +74,7 @@ void Init_querybuilder_ext() {
   STORE_SYM(interval);
   STORE_SYM(scope);
   STORE_SYM(filter);
+  STORE_SYM(select);
   STORE_SYM(offset);
   STORE_SYM(param);
   STORE_SYM(paginate);
@@ -156,6 +160,19 @@ void Init_querybuilder_ext() {
     rb_ary_push(last, tmp);
   }
 
+  action select_one {
+    // last = apply_op(stack, :select_one)
+    APPLY_OP(_select_one);
+    // last << str_buf
+    rb_ary_push(last, rb_str_new(str_a, p - str_a));
+    // str_buf = ""
+    str_a = NULL;
+    // # last should be [:select, ...], not the [:select_one] just added.
+    // stack.pop
+    rb_ary_pop(stack);
+    // last = stack.last
+    last = rb_ary_entry(stack, -1);
+  }
 
   action function {
     // last = apply_op(stack, :function)
@@ -212,6 +229,12 @@ void Init_querybuilder_ext() {
     // last = apply_op(stack, :filter)
     APPLY_OP(_filter);
     clause_state = CLAUSE_FILTER;
+  }
+
+  action select {
+    // last = apply_op(stack, :select)
+    APPLY_OP(_select);
+    clause_state = CLAUSE_SELECT;
   }
 
   action goto_expr_p {
@@ -379,6 +402,7 @@ void Init_querybuilder_ext() {
 #define CLAUSE_RELATION    1
 #define CLAUSE_PARENTHESIS 2
 #define CLAUSE_FILTER      4
+#define CLAUSE_SELECT      8
 
 VALUE rb_parse(VALUE self, VALUE arg) {
   VALUE stack, last, tmp;

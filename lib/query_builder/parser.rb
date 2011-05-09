@@ -3,7 +3,7 @@ module QueryBuilder
     class << self
       # http://dev.mysql.com/doc/refman/5.1/en/operator-precedence.html
       OP_PRECEDENCE = {
-        :function => 50,
+        :function => 50, :select_one => 50,
         :interval => 40,
         :binary   => 39, :collate  => 39,
         :"!" => 38,
@@ -22,7 +22,7 @@ module QueryBuilder
         :xor => 26,
         :"||" => 25, :or => 25,
         :":=" => 24,
-        :relation => 13, :filter => 13,
+        :relation => 13, :filter => 13, :select => 13,
         :scope => 12,
         :from => 11,  # this is not the same as SQL 'FROM', it's "icons from friends"
         :asc  => 10, :desc => 10,

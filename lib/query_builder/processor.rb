@@ -450,6 +450,18 @@ module QueryBuilder
         add_filter process(filter)
       end
 
+      def process_select(*args)
+        process(args.shift)
+        context[:processing] = :select
+        args.each do |arg|
+          process(arg)
+        end
+      end
+
+      def process_select_one(fld, name)
+        @query.add_select("#{process(fld)} AS #{name}")
+      end
+
       def process_par(content)
         content.first == :or ? process(content) : "(#{process(content)})"
       end

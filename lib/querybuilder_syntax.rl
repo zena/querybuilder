@@ -2,7 +2,7 @@
   machine querybuilder;
   # Pseudo sql syntax:
   #
-  # 'RELATION [where CLAUSE] [in SCOPE]
+  # 'RELATION [where CLAUSE] [select att[as xxx], att] [in SCOPE]
   #  [from SUB_QUERY] [limit num(,num)] [offset num] [paginate key] [order by ORDER_CLAUSE] [group by GROUP_CLAUSE]'
   #
   # The where CLAUSE can contain the following operators
@@ -31,7 +31,10 @@
 
   relation = ws* var %relation;
   filter   = expr ;
-  filters  = ws+ 'where' %filter ws filter;
+  filters  = ws+ 'where'  %filter ws filter;
+  select_f = field ws+ 'as' ws+ var %select_one;
+  select   = select_f (ws* ',' ws* select_f)*;
+  selects  = ws+ 'select' %select ws select;
   scope    = ws+ 'in' ws var %scope;
 
   offset   = ws+ 'offset' %offset integer;
@@ -41,7 +44,7 @@
   order    = ws+ 'order' ws+ 'by' %order field (direction)? (ws* ',' field (direction)?)*;
   group    = ws+ 'group' ws+ 'by' %group field (ws* ',' field)*;
 
-  part     = (relation filters? scope? | ws* '(' >goto_clause_p ws* ')');
+  part     = (relation filters? selects? scope? | ws* '(' >goto_clause_p ws* ')');
   clause   = (part (ws+ 'from' %from_ part)* | '(' >goto_clause_p ws* ')' );
   clause_p:= clause ws* ')' $clause_close;
   main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* group? order? limit? offset? paginate? ('\n' | ws)+ $err(error);
