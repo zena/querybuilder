@@ -1,11 +1,16 @@
-== 0.9.5 2011-05-09
+== 0.9.6 2011-05-09
+
+* Major enhancements
+  * Fixed a bug where custom_queries would not pre load.
+  * Added support for digits in field names.
+  * Enabled 'main_class' setting in custom query.
+
+== 0.9.5 2011-02-10
 
 * Major enhancements
   * Better quoting when connection quote uses backslash (eval removes backslash).
   * Fixed a bug when paginating without a limit clause.
-  * Fixed a bug where custom_queries would not pre load.
-  * Added support for digits in field names.
-  * Enabled 'main_class' setting in custom query.
+
 
 == 0.9.4 2010-12-02
 
