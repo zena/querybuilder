@@ -57,15 +57,7 @@ module QueryBuilder
     # Return all explicit selected keys (currently selection is only available in custom queries)
     # For example, sql such as "SELECT form.*, MAX(form.date) AS last_date" would provice 'last_date' key.
     def select_keys
-      @select_keys ||= (@select || []).map do |field|
-        if field =~ %r{AS\s+(.+)$}
-          $1
-        elsif field =~ %r{^(\w+\.|)([^\*]+)$}
-          $2
-        else
-          nil
-        end
-      end.compact
+      @select_keys ||= @attributes_alias.keys.compact
     end
 
     # Convert query object to a string. This string should then be evaluated.
@@ -137,11 +129,10 @@ module QueryBuilder
       alias_table
     end
 
-    def add_select(clause)
+    def add_select(field, quoted_name, fname)
       @select ||= ["#{main_table}.*"]
-      # FIXME: verify that there is no name clash between fname and table columns
-      @select << clause
-      rebuild_attributes_hash!
+      @select << "#{field} AS #{quoted_name}"
+      @attributes_alias[fname] = field
     end
 
     def table(table_name = main_table, index = 0)
@@ -194,11 +185,20 @@ module QueryBuilder
 
     def rebuild_attributes_hash!
       @attributes_alias = {}
-      @select.each do |attribute|
-        if attribute =~ /\A(.+)\s+AS\s+(.+)\Z/
-          @attributes_alias[$2] = $1
+      (@select || []).each do |field|
+        if field =~ %r{\A(.*)\s+AS\s+(.+)\Z}i
+          key, value = $2, $1
+          if key =~ /('|"|`)(.*)\1/
+            # TODO: is this clean enough unquoting ?
+            key = $2
+          end
+          @attributes_alias[key] = value
+        elsif field =~ %r{^(\w+\.|)([^\*]+)$}
+          @attributes_alias[$2] = field
         end
       end
+      # Force rebuild
+      @select_keys = nil
     end
 
 

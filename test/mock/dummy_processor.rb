@@ -83,6 +83,8 @@ class DummyProcessor < QueryBuilder::Processor
     case method
     when 'year'
       "strftime('%Y',#{arg})"
+    when 'count'
+      "COUNT(#{arg})"
     else
       super
     end

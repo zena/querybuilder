@@ -72,7 +72,7 @@ class DummyQueryBuilder < Test::Unit::TestCase
     end
 
     should 'respond to select_keys' do
-      assert_equal %w{a number c}, subject.select_keys
+      assert_equal %w{a c number}, subject.select_keys.sort
     end
 
     should 'not include star keys' do

@@ -17,8 +17,19 @@ class QueryTest < Test::Unit::TestCase
     should 'respond to rebuild_attributes_hash' do
       subject.select = ['1 as one', 'two', '(20 - (weight / (height * height))) AS bmi_nrm']
       subject.rebuild_attributes_hash!
-      h = {"bmi_nrm"=>"(20 - (weight / (height * height)))"}
+      h = {
+        'bmi_nrm'=>'(20 - (weight / (height * height)))',
+        'two' => 'two',
+        'one' => '1',
+      }
       assert_equal h, subject.attributes_alias
+    end
+    
+    should 'respond to add_select' do
+      subject.instance_variable_set(:@main_table, 'nodes')
+      subject.add_select('foo*3', '`bar`', 'bar')
+      assert_equal %w{bar}, subject.select_keys
+      assert_equal ['nodes.*', 'foo*3 AS `bar`'], subject.select
     end
   end
 

@@ -7,23 +7,22 @@ empty:
 simple:
   src: "letters select name as fname"
   sxp: '[:query, [:select, [:relation, "letters"], [:select_one, [:field, "name"], "fname"]]]'
-  res: "[%Q{SELECT objects.*,objects.name AS fname FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ?}, id]"
+  res: "[%Q{SELECT objects.*,objects.name AS 'fname' FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ?}, id]"
 
 list:
   src: "letters select name as fname, id as fid"
   sxp: '[:query, [:select, [:relation, "letters"], [:select_one, [:field, "name"], "fname"], [:select_one, [:field, "id"], "fid"]]]'
-  res: "[%Q{SELECT objects.*,objects.name AS fname,objects.id AS fid FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ?}, id]"
+  res: "[%Q{SELECT objects.*,objects.name AS 'fname',objects.id AS 'fid' FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ?}, id]"
 
 function_as:
   src: "letters select event_at.year as year"
   sxp: '[:query, [:select, [:relation, "letters"], [:select_one, [:function, [:field, "event_at"], [:method, "year"]], "year"]]]'
-  res: "[%Q{SELECT objects.*,strftime('%Y',objects.event_at) AS year FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ?}, id]"
+  res: "[%Q{SELECT objects.*,strftime('%Y',objects.event_at) AS 'year' FROM objects WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ?}, id]"
 
 select_count:
   src: "objects select id.count as obj_count in site group by event_at.year order by event_at asc"
-  sxp: '[]'
-  res: "[]"
+  res: "%Q{SELECT objects.*,COUNT(objects.id) AS 'obj_count' FROM objects GROUP BY strftime('%Y',objects.event_at) ORDER BY objects.event_at ASC}"
 
 select_in_from:
   src: "letters select name as foo from recipients select name as fname"
-  res: "/ob1.name AS fname.*,objects.name AS foo/"
+  res: "/ob1.name AS 'fname'.*,objects.name AS 'foo'/"

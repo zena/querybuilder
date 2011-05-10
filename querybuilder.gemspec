@@ -61,6 +61,7 @@ Gem::Specification.new do |s|
     "test/querybuilder/joins.yml",
     "test/querybuilder/mixed.yml",
     "test/querybuilder/rubyless.yml",
+    "test/querybuilder/select.yml",
     "test/querybuilder_test.rb",
     "test/test_helper.rb"
   ]

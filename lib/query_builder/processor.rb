@@ -459,7 +459,17 @@ module QueryBuilder
       end
 
       def process_select_one(fld, name)
-        @query.add_select("#{process(fld)} AS #{name}")
+        test_fld = nil
+        begin
+          test_fld = process_field(name)
+        rescue QueryBuilder::SyntaxError
+        end
+
+        if test_fld
+          # ERROR
+          raise QueryBuilder::SyntaxError.new("Cannot select #{name.inspect} (invalid name).")
+        end
+        @query.add_select(process(fld), quote(name), name)
       end
 
       def process_par(content)

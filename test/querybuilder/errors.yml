@@ -17,7 +17,7 @@ offset_without_limit:
 paginate_without_limit:
   src: "objects in site paginate p"
   res: "Invalid paginate clause (used without limit)."
-  
+
 legacy_many_clauses:
   src: letters or foo
   res: "Unknown relation 'foo'."
@@ -43,3 +43,7 @@ unmatched_open_par:
 unmatched_close_par:
   src: "objects where event_at is null )"
   res: "Syntax error near \"ll )\"."
+
+bad_select:
+  src: "letters select id as name"
+  res: "Cannot select \"name\" (invalid name)."
