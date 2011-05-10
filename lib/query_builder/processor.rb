@@ -421,7 +421,13 @@ module QueryBuilder
       def process_field(fld_name)
         if fld = @query.attributes_alias[fld_name]
           # use custom query alias value defined in select clause: 'custom_a AS validation'
-          processing_filter? ? "(#{fld})" : fld
+          if processing_filter?
+            "(#{fld})"
+          elsif processing_having?
+            @query.quote_column_name(fld_name)
+          else
+            fld
+          end
         else
           raise QueryBuilder::SyntaxError.new("Unknown field '#{fld_name}'.")
         end
@@ -469,7 +475,7 @@ module QueryBuilder
           # ERROR
           raise QueryBuilder::SyntaxError.new("Cannot select #{name.inspect} (invalid name).")
         end
-        @query.add_select(process(fld), quote(name), name)
+        add_select(process(fld), name)
       end
 
       def process_par(content)
@@ -565,6 +571,12 @@ module QueryBuilder
         process(variables.shift)  # parse query
         context[:processing] = :group
         @query.group = " GROUP BY #{variables.map {|var| process(var)}.join(', ')}"
+      end
+
+      def process_having(query, clause)
+        process(query)
+        context[:processing] = :having
+        @query.having = " HAVING #{process(clause)}"
       end
 
       def process_void(*args)
@@ -723,18 +735,13 @@ module QueryBuilder
 
     private
 
-      %W{filter scope limit offset paginate group order}.each do |context|
+      %W{filter select scope limit offset paginate group having order}.each do |context|
         # Return true if we are expanding a filter / scope / limit / etc
         class_eval(%Q{
           def processing_#{context}?
             context[:processing] == :#{context}
           end
         }, __FILE__, __LINE__ - 2)
-      end
-
-      # Return true if we are expanding a filter
-      def processing_scope?
-        context[:processing] == :scope
       end
 
       # Parse custom query arguments for special keywords (RELATION, NODE_ATTR, ETC)

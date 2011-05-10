@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Gaspard Bucher"]
-  s.date = %q{2011-05-09}
+  s.date = %q{2011-05-10}
   s.description = %q{QueryBuilder is an interpreter for the "pseudo sql" language. This language
     can be used for two purposes:
 

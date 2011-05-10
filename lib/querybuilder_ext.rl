@@ -22,6 +22,7 @@ static VALUE _in;
 static VALUE _interval;
 static VALUE _scope;
 static VALUE _filter;
+static VALUE _having;
 static VALUE _select;
 static VALUE _offset;
 static VALUE _param;
@@ -75,6 +76,7 @@ void Init_querybuilder_ext() {
   STORE_SYM(scope);
   STORE_SYM(filter);
   STORE_SYM(select);
+  STORE_SYM(having);
   STORE_SYM(offset);
   STORE_SYM(param);
   STORE_SYM(paginate);
@@ -228,7 +230,16 @@ void Init_querybuilder_ext() {
   action filter {
     // last = apply_op(stack, :filter)
     APPLY_OP(_filter);
+    // clause_state = :filter
     clause_state = CLAUSE_FILTER;
+  }
+
+
+  action having {
+    // last = apply_op(stack, :having)
+    APPLY_OP(_having);
+    // clause_state = :having
+    clause_state = CLAUSE_HAVING;
   }
 
   action select {
@@ -403,6 +414,7 @@ void Init_querybuilder_ext() {
 #define CLAUSE_PARENTHESIS 2
 #define CLAUSE_FILTER      4
 #define CLAUSE_SELECT      8
+#define CLAUSE_HAVING      16
 
 VALUE rb_parse(VALUE self, VALUE arg) {
   VALUE stack, last, tmp;

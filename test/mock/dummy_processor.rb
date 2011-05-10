@@ -28,7 +28,7 @@ class DummyProcessor < QueryBuilder::Processor
 
   # Overwrite this and take care to check for valid fields.
   def process_field(field_name)
-    if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a', 'idx_foo1'].include?(field_name)
+    if ['id', 'parent_id', 'project_id', 'section_id', 'kpath', 'name', 'event_at', 'custom_a', 'idx_foo1' , 'amount'].include?(field_name)
       "#{table}.#{field_name}"
     elsif field_name == 'REF_DATE'
       context[:ref_date] ? insert_bind(context[:ref_date]) : 'now()'
@@ -85,6 +85,8 @@ class DummyProcessor < QueryBuilder::Processor
       "strftime('%Y',#{arg})"
     when 'count'
       "COUNT(#{arg})"
+    when 'sum'
+      "SUM(#{arg})"
     else
       super
     end

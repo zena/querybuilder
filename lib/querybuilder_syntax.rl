@@ -2,10 +2,9 @@
   machine querybuilder;
   # Pseudo sql syntax:
   #
-  # 'RELATION [where CLAUSE] [select att[as xxx], att] [in SCOPE]
-  #  [from SUB_QUERY] [limit num(,num)] [offset num] [paginate key] [order by ORDER_CLAUSE] [group by GROUP_CLAUSE]'
+  # 'RELATION [where CLAUSE] [select ATTR as NAME, ...] [in SCOPE]
+  #  [from SUB_QUERY] [group by GROUP_CLAUSE] [having CLAUSE] [order by ORDER_CLAUSE] [limit num(,num)] [offset num] [paginate key]'
   #
-  # The where CLAUSE can contain the following operators
 
   ws       = ' ' | '\t' | '\n';
   var      = ws* ([a-zA-Z_][a-zA-Z0-9_:]*) $str_a;
@@ -32,9 +31,11 @@
   relation = ws* var %relation;
   filter   = expr ;
   filters  = ws+ 'where'  %filter ws filter;
+
   select_f = field ws+ 'as' ws+ var %select_one;
   select   = select_f (ws* ',' ws* select_f)*;
   selects  = ws+ 'select' %select ws select;
+
   scope    = ws+ 'in' ws var %scope;
 
   offset   = ws+ 'offset' %offset integer;
@@ -42,11 +43,12 @@
   limit    = ws+ 'limit' %limit integer (ws* ',' integer)?;
   direction= ws+ ('asc' | 'desc' | 'ASC' | 'DESC') $str_a %direction;
   order    = ws+ 'order' ws+ 'by' %order field (direction)? (ws* ',' field (direction)?)*;
-  group    = ws+ 'group' ws+ 'by' %group field (ws* ',' field)*;
+  group    = ws+ 'group'  ws+ 'by' %group field (ws* ',' field)*;
+  having   = ws+ 'having' ws+ %having expr;
 
-  part     = (relation filters? selects? scope? | ws* '(' >goto_clause_p ws* ')');
+  part     = (relation selects? filters? scope? | ws* '(' >goto_clause_p ws* ')');
   clause   = (part (ws+ 'from' %from_ part)* | '(' >goto_clause_p ws* ')' );
   clause_p:= clause ws* ')' $clause_close;
-  main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* group? order? limit? offset? paginate? ('\n' | ws)+ $err(error);
+  main    := clause (ws+ ('or' | 'and') $str_a %join_clause ws clause)* group? having? order? limit? offset? paginate? ('\n' | ws)+ $err(error);
 
 }%%

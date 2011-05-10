@@ -2,6 +2,7 @@
 
 * Major enhancements
   * Added support for 'select' clause.
+  * Added support for 'having' clause.
 
 == 0.9.6 2011-05-09
 

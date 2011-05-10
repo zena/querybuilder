@@ -24,12 +24,13 @@ class QueryTest < Test::Unit::TestCase
       }
       assert_equal h, subject.attributes_alias
     end
-    
+
     should 'respond to add_select' do
       subject.instance_variable_set(:@main_table, 'nodes')
-      subject.add_select('foo*3', '`bar`', 'bar')
+      subject.instance_variable_set(:@default_class, 'Dummy')
+      subject.add_select('foo*3', 'bar')
       assert_equal %w{bar}, subject.select_keys
-      assert_equal ['nodes.*', 'foo*3 AS `bar`'], subject.select
+      assert_equal ['nodes.*', 'foo*3 AS "bar"'], subject.select
     end
   end
 

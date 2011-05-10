@@ -2,10 +2,14 @@ require 'active_record'
 
 begin
   class QueryBuilderTestMigration < ActiveRecord::Migration
-    def self.down
-    end
-
     def self.up
+      create_table 'dummies' do |t|
+        t.string  'name'
+        t.timestamps
+      end
+    end
+    def self.down
+
     end
   end
 

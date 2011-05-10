@@ -98,6 +98,11 @@ module QueryBuilder
       clause_state = :filter
     }
 
+    action having {
+      last = apply_op(stack, :having)
+      clause_state = :having
+    }
+
     action select {
       last = apply_op(stack, :select)
       clause_state = :select

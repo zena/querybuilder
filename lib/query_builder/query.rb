@@ -4,7 +4,7 @@ module QueryBuilder
   class Query
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
-                  :pagination_key, :main_class, :context, :key_value_tables
+                  :pagination_key, :main_class, :context, :key_value_tables, :having
 
     class << self
       def adapter
@@ -46,8 +46,10 @@ module QueryBuilder
 
     # Return the default class of resulting objects (usually the base class).
     def default_class
-      klass = @processor_class.main_class
-      QueryBuilder.resolve_const(klass)
+      @default_class ||= begin
+        klass = @processor_class.main_class
+        QueryBuilder.resolve_const(klass)
+      end
     end
 
     def add_filter(filter)
@@ -101,7 +103,6 @@ module QueryBuilder
     # => "SELECT COUNT(*) FROM objects WHERE objects.project_id = 12489"
     def sql(bindings, type = :find)
       statement, bind_values = build_statement(type)
-      connection = get_connection(bindings)
       statement.gsub('?') { eval_bound_value(bind_values.shift, connection, bindings) }
     end
 
@@ -129,9 +130,9 @@ module QueryBuilder
       alias_table
     end
 
-    def add_select(field, quoted_name, fname)
+    def add_select(field, fname)
       @select ||= ["#{main_table}.*"]
-      @select << "#{field} AS #{quoted_name}"
+      @select << "#{field} AS #{quote_column_name(fname)}"
       @attributes_alias[fname] = field
     end
 
@@ -206,6 +207,10 @@ module QueryBuilder
       @where.reverse.join(' AND ')
     end
 
+    def quote_column_name(name)
+      connection.quote_column_name(name)
+    end
+
     private
       # Make sure each used table gets a unique name
       def get_alias(use_name, table_name = nil, avoid_alias = true)
@@ -272,7 +277,7 @@ module QueryBuilder
           end
         end
 
-        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @having.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement
@@ -299,8 +304,8 @@ module QueryBuilder
         "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}")
       end
 
-      def get_connection(bindings)
-        eval("#{default_class}.connection", bindings)
+      def get_connection
+        eval("#{default_class}.connection")
       end
 
       # Adapted from Rail's ActiveRecord code. We need "eval" because
@@ -317,6 +322,10 @@ module QueryBuilder
         else
           connection.quote(value)
         end
+      end
+
+      def connection
+        @connection ||= get_connection
       end
   end
 end

@@ -29,7 +29,7 @@ module QueryBuilder
         :clause => 5,
         :clause_and => 4,
         :clause_or => 3,
-        :offset => 2, :paginate => 2, :limit => 2, :order => 2, :group => 2,
+        :offset => 2, :paginate => 2, :limit => 2, :order => 2, :group => 2,  :having => 2,
         :query => 1,
         :par_close => 0, :clause_par_close => 0,
         :par => -1, :clause_par => -1

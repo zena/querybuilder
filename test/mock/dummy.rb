@@ -1,6 +1,6 @@
 require 'mock/dummy_processor'
 
-class Dummy
+class Dummy < ActiveRecord::Base
   include RubyLess
   safe_method :id => Number
 
