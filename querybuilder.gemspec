@@ -58,6 +58,7 @@ Gem::Specification.new do |s|
     "test/querybuilder/errors.yml",
     "test/querybuilder/filters.yml",
     "test/querybuilder/group.yml",
+    "test/querybuilder/having.yml",
     "test/querybuilder/joins.yml",
     "test/querybuilder/mixed.yml",
     "test/querybuilder/rubyless.yml",

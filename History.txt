@@ -1,4 +1,4 @@
-== 1.0.0
+== 1.0.0 2011-05-10
 
 * Major enhancements
   * Added support for 'select' clause.
