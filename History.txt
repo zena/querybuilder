@@ -1,3 +1,8 @@
+== 1.0.1 2011-07-11
+
+* Minor enhancements
+  * Added support for 'all' group in custom queries.
+
 == 1.0.0 2011-05-10
 
 * Major enhancements

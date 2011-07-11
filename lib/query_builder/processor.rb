@@ -76,7 +76,7 @@ module QueryBuilder
       def load_custom_queries!
         return unless list = self.custom_query_files
         klass = nil
-        self.custom_queries ||= {}
+        self.custom_queries ||= {'all' => {}}
         Dir.glob(list.flatten).each do |dir|
           if File.directory?(dir)
             Dir.foreach(dir) do |file|
@@ -708,19 +708,19 @@ module QueryBuilder
       def custom_query_without_loading(relation)
         return false unless first? && last?  # current safety net until "from" is correctly implemented and tested
 
-        custom_queries = self.class.custom_queries
-        if custom_queries &&
-           custom_queries[@opts[:custom_query_group]] &&
-           custom_query = custom_queries[@opts[:custom_query_group]][relation.singularize]
-
-          custom_query.each do |k,v|
-            @query.send(:instance_variable_set, "@#{k}", prepare_custom_query_arguments(k.to_sym, v))
+        if custom_queries = self.class.custom_queries
+          queries = custom_queries[@opts[:custom_query_group]] || {}
+          rel     = relation.singularize
+          if custom_query = queries[rel] || custom_queries['all'][rel]
+            custom_query.each do |k,v|
+              @query.send(:instance_variable_set, "@#{k}", prepare_custom_query_arguments(k.to_sym, v))
+            end
+            # rebuild table alias
+            @query.rebuild_tables!
+            # rebuild 'select' aliases
+            @query.rebuild_attributes_hash!
+            true
           end
-          # rebuild table alias
-          @query.rebuild_tables!
-          # rebuild 'select' aliases
-          @query.rebuild_attributes_hash!
-          true
         end
       end
 
