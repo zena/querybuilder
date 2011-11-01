@@ -100,3 +100,8 @@ function_with_multiple_args:
   src: "objects where name.coalesce(id,'foo') = 'foo'"
   sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:function, [:field, "name"], [:method, "coalesce"], [:field, "id"], [:string, "foo"]], [:string, "foo"]]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE COALESCE(objects.name,objects.id,'foo') = 'foo' AND objects.parent_id = ?}, id]"
+
+function_in_order:
+  src: "objects order by event_at.coalesce(0)"
+  sxp: '[:query, [:order, [:relation, "objects"], [:function, [:field, "event_at"], [:method, "coalesce"], [:integer, "0"]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ? ORDER BY COALESCE(objects.event_at,0)}, id]"
