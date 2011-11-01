@@ -90,3 +90,13 @@ after_process_callback:
     after_filter: '(1 = 1)'
   src: "objects where name like 'a%' or name like 'b%' in site"
   res: "%Q{SELECT objects.* FROM objects WHERE (1 = 1) AND (objects.name LIKE 'a%' OR objects.name LIKE 'b%') GROUP BY id}"
+
+function:
+  src: "objects where event_at.year = 2005"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:function, [:field, "event_at"], [:method, "year"]], [:integer, "2005"]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE strftime('%Y',objects.event_at) = 2005 AND objects.parent_id = ?}, id]"
+
+function_with_multiple_args:
+  src: "objects where name.coalesce(id,'foo') = 'foo'"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:function, [:field, "name"], [:method, "coalesce"], [:field, "id"], [:string, "foo"]], [:string, "foo"]]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE COALESCE(objects.name,objects.id,'foo') = 'foo' AND objects.parent_id = ?}, id]"

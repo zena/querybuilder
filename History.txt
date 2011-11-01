@@ -1,3 +1,8 @@
+== 1.1.0 2011-11-01
+
+* Major enhancements
+  * Added support for mutliple arguments in functions "date.coalesce(0,4)"
+
 == 1.0.1 2011-07-11
 
 * Minor enhancements

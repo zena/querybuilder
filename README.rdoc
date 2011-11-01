@@ -53,6 +53,8 @@ In the compiler, 'images' could be resolved as a filter on class type (filter_re
 special case in process_equal, 'year' will be resolved depending on the SQL connection to something like
 strftime('%Y', event_at), 'project' as a scope and 'favorite_projects' as a join_relation.
 
+You can also use 'functions' such as event_at.year or event_at.coalesce(0).
+
 This might seem very complex, but usually, you start with a basic compiler and augment it when needs arise to
 build more powerful queries.
 

@@ -77,7 +77,7 @@ class DummyProcessor < QueryBuilder::Processor
   def process_match(left, right)
   end
 
-  def process_function(arg, method)
+  def process_function(arg, method, *args)
     method, arg = process(method), process(arg)
 
     case method
@@ -87,6 +87,9 @@ class DummyProcessor < QueryBuilder::Processor
       "COUNT(#{arg})"
     when 'sum'
       "SUM(#{arg})"
+    when 'coalesce'
+      args = [arg] + args.map{|a| process(a)}
+      "COALESCE(#{args.join(',')})"
     else
       super
     end
