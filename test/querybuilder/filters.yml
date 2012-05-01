@@ -138,6 +138,11 @@ functions:
   sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:function, [:field, "event_at"], [:method, "year"]], [:function, [:field, "REF_DATE"], [:method, "year"]]]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE strftime('%Y',objects.event_at) = strftime('%Y',now()) AND objects.parent_id = ?}, id]"
 
+nested_functions:
+  src: "objects where event_at.year.min = 2006 group by project_id"
+  sxp: '[:query, [:group, [:filter, [:relation, "objects"], [:"=", [:function, [:function, [:field, "event_at"], [:method, "year"]], [:method, "min"]], [:integer, "2006"]]], [:field, "project_id"]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE MIN(strftime('%Y',objects.event_at)) = 2006 AND objects.parent_id = ? GROUP BY objects.project_id}, id]"
+
 filter_empty_literal:
   src: "objects where \"\" = ''"
   sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:dstring, ""], [:string, ""]]]]'

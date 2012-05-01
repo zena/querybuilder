@@ -90,6 +90,9 @@ class DummyProcessor < QueryBuilder::Processor
     when 'coalesce'
       args = [arg] + args.map{|a| process(a)}
       "COALESCE(#{args.join(',')})"
+    when 'min'
+      args = [arg] + args.map{|a| process(a)}
+      "MIN(#{args.join(',')})"
     else
       super
     end
