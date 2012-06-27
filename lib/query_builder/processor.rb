@@ -202,6 +202,15 @@ module QueryBuilder
       def default(key)
         @default[key] || self.class.defaults[key]
       end
+      
+      # The passed :default scope is only applied on last context.
+      def default_scope(context)
+        if context[:last]
+          default(:scope)
+        else
+          self.class.defaults[:scope]
+        end
+      end
 
       def process(sxp)
         return sxp if sxp.kind_of?(String)
@@ -800,7 +809,7 @@ module QueryBuilder
             context[:scope_type] = nil
             # post scope
             @query.add_table(use_name, table_name, avoid_alias)
-            apply_scope(context[:scope] || default(:scope))
+            apply_scope(context[:scope] || default_scope(context))
           else
             # scope already applied / skip
             @query.add_table(use_name, table_name, avoid_alias)

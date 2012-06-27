@@ -37,6 +37,10 @@ class DummyQueryBuilder < Test::Unit::TestCase
       assert_equal '[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ?}, project_id]', subject.new('objects', :default => {:scope => 'project'}).query.to_s
       assert_equal '[%Q{SELECT objects.* FROM objects WHERE objects.parent_id = ?}, id]', subject.new('objects').query.to_s
     end
+    
+    should 'not overwrite defaults before last' do
+      assert_equal '%Q{SELECT objects.* FROM objects,objects AS ob1 WHERE objects.parent_id = ob1.id GROUP BY objects.id}', subject.new('objects from objects', :default => {:scope => 'site'}).query.to_s
+    end
   end
 
   context 'Including QueryBuilder' do

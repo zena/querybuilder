@@ -1,3 +1,8 @@
+== 1.1.1 2012-06-27
+
+* Major enhancements
+  * Fixed bug with default scope (should only be applied on last context).
+
 == 1.1.0 2011-11-01
 
 * Major enhancements
