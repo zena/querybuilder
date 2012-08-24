@@ -41,7 +41,7 @@ Everything in brackets is optional:
 The where CLAUSE can contain the following operators (lt, gt, le, etc are the same as '<' and company but avoid escaping in
 xml/html environments):
 
-  '+' | '-' | '<' | '<=' | '=' | '>=' | '>'
+  '+' | '-' | '<' | '<=' | '=' | '>=' | '>' | '<>'
   'or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt'
   'like' | 'not like' | 'match' | 'in'
 

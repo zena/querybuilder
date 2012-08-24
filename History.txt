@@ -1,3 +1,8 @@
+== 1.1.2 2012-08-24
+
+* Minor enhancement
+  * Fixed bug where 'not-equal' was not supported ('<>' or '!=').
+
 == 1.1.1 2012-06-27
 
 * Major enhancements

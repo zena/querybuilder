@@ -19,7 +19,7 @@
   literal  = (string | number | rubyless);
 
   field    = var %field ('.' %function var %method ('(' (var %field | literal) (',' (var % field | literal))* ')')*)*;
-  op       = ws* ('+' | '-' | '<' | '<=' | '=' | '>=' | '>') $str_a;
+  op       = ws* ('+' | '-' | '<' | '<=' | '=' | '>=' | '>' | '<>' | '!=' ) $str_a;
   text_op  = ws+ (('or' | 'and' | 'lt' | 'le' | 'eq' | 'ne' | 'ge' | 'gt' | 'match') $str_a | ('not' $str_a %operator ws+)? 'like' $str_a);
   operator = (op %operator | text_op %operator ws+ );
   interval = ws+ ('second'|'minute'|'hour'|'day'|'week'|'month'|'year') $str_a %interval 's'?;

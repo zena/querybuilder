@@ -3,6 +3,16 @@ simple:
   sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:"=", [:field, "name"], [:string, "foo"]]], "site"]]'
   res: "%Q{SELECT objects.* FROM objects WHERE objects.name = 'foo'}"
 
+not_equal:
+  src: "objects where name <> 'foo' in site"
+  sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:"<>", [:field, "name"], [:string, "foo"]]], "site"]]'
+  res: "%Q{SELECT objects.* FROM objects WHERE objects.name <> 'foo'}"
+
+not_equal_alt:
+  src: "objects where name != 'foo' in site"
+  sxp: '[:query, [:scope, [:filter, [:relation, "objects"], [:"!=", [:field, "name"], [:string, "foo"]]], "site"]]'
+  res: "%Q{SELECT objects.* FROM objects WHERE objects.name <> 'foo'}"
+  
 recipients_where_kpath:
   src: "recipients where kpath like 'NRCC%'"
   res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
