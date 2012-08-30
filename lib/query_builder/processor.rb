@@ -758,6 +758,10 @@ module QueryBuilder
       def prepare_custom_query_arguments(key, value)
         if key == :main_class
           resolve_main_class(value)
+        elsif key == :types
+          value.each do |k,v|
+            value[k] = v.to_sym
+          end
         elsif value.kind_of?(Array)
           value.map {|e| parse_custom_query_argument(key, e)}
         elsif value.kind_of?(Hash)

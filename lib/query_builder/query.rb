@@ -2,9 +2,10 @@ require 'active_record'
 
 module QueryBuilder
   class Query
+    SELECT_WITH_TYPE_REGEX = /^(.*):(.*)$/
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
-                  :pagination_key, :main_class, :context, :key_value_tables, :having
+                  :pagination_key, :main_class, :context, :key_value_tables, :having, :types
 
     class << self
       def adapter
@@ -19,6 +20,8 @@ module QueryBuilder
       @join_tables = {}
       @needed_join_tables = {}
       @attributes_alias   = {}
+      # Custom select foo as bar:time or 'types:' field in custom query.
+      @types              = {}
       @key_value_tables   = {}
       @where = []
     end
@@ -56,10 +59,18 @@ module QueryBuilder
       @where << filter
     end
 
-    # Return all explicit selected keys (currently selection is only available in custom queries)
+    # Return all explicit selected keys
     # For example, sql such as "SELECT form.*, MAX(form.date) AS last_date" would provice 'last_date' key.
     def select_keys
-      @select_keys ||= @attributes_alias.keys.compact
+      @select_keys ||= begin
+        keys = @attributes_alias.keys.compact
+        # When rebuilding select_keys, we rebuild @types
+        keys.each do |k|
+          # Default type is string
+          @types[k] ||= :string
+        end
+        keys
+      end
     end
 
     # Convert query object to a string. This string should then be evaluated.
@@ -131,6 +142,10 @@ module QueryBuilder
     end
 
     def add_select(field, fname)
+      if fname =~ SELECT_WITH_TYPE_REGEX
+        fname, type = $1, $2
+        @types[fname] = type.to_sym
+      end
       @select ||= ["#{main_table}.*"]
       @select << "#{field} AS #{quote_column_name(fname)}"
       @attributes_alias[fname] = field

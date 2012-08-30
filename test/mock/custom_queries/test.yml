@@ -19,6 +19,8 @@ DummyProcessor:
       - a
       - 34 AS number
       - c
+    types:
+      number: integer
     tables:
       - test
     where:

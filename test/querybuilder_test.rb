@@ -78,6 +78,10 @@ class DummyQueryBuilder < Test::Unit::TestCase
     should 'respond to select_keys' do
       assert_equal %w{a c number}, subject.select_keys.sort
     end
+    
+    should 'return type of custom key' do
+      assert_equal :integer, subject.types['number']
+    end
 
     should 'not include star keys' do
       assert !subject.select_keys.include?('*')
