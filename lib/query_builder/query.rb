@@ -119,9 +119,9 @@ module QueryBuilder
 
     # 'avoid_alias' is used when parsing the last element so that it takes the real table name (nodes, not no1). We need
     # this because we can use 'OR' between parts and we thus need the same table reference.
-    def add_table(use_name, table_name = nil, avoid_alias = true)
+    def add_table(use_name, table_name = nil, avoid_alias = true, type = nil, &block)
       alias_name = get_alias(use_name, table_name, avoid_alias)
-      add_alias_to_tables(table_name || use_name, alias_name)
+      add_alias_to_tables(table_name || use_name, alias_name, type, &block)
     end
 
     # Add a table to 'import' a key/value based field. This method ensures that
@@ -133,10 +133,8 @@ module QueryBuilder
         # done, the index_table has been used for the given key in the current context
       else
         # insert the new table
-        add_table(use_name, index_table, false)
+        add_table(use_name, index_table, false, :left, &block)
         alias_table = key_table[key] = table(use_name)
-        # Let caller configure the filter (join).
-        block.call(alias_table)
       end
       alias_table
     end
@@ -225,27 +223,51 @@ module QueryBuilder
     def quote_column_name(name)
       connection.quote_column_name(name)
     end
-
+    
+    def has_table?(use_name)
+      !@table_alias[use_name].nil?
+    end
+    
+    
     private
-      # Make sure each used table gets a unique name
+      # Make sure each used table gets a unique name. By default, this uses an alias
+      # But if 'avoid_alias' is true and it is the first call for this table, return the
+      # table without an alias.
       def get_alias(use_name, table_name = nil, avoid_alias = true)
         table_name ||= use_name
-        @table_alias[use_name] ||= []
-        if avoid_alias && !@tables.include?(table_name)
+        list = (@table_alias[use_name] ||= [])
+        if avoid_alias && !list.include?(use_name)
           alias_name = use_name
         elsif @tables.include?(use_name)
           # links, li1, li2, li3
-          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size}"
+          alias_name = "#{use_name[0..1]}#{list.size}"
         else
           # ob1, obj2, objects
-          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
+          alias_name = "#{use_name[0..1]}#{list.size + 1}"
         end
 
-        @table_alias[use_name] << alias_name
+        list << alias_name
         alias_name
       end
 
-      def add_alias_to_tables(table_name, alias_name)
+      def add_alias_to_tables(table_name, alias_name, type = nil, &block)
+        if type
+          key = "#{table_name}=#{type}=#{alias_name}"
+          
+          @needed_join_tables[key] ||= begin
+            clause = "#{type.to_s.upcase} JOIN #{table_name}"
+            if alias_name && alias_name != table_name
+              clause << " AS #{alias_name}"
+            end
+            if block_given?
+              clause << " ON #{block.call(alias_name || table_name)}"
+            end
+            joins = (@join_tables[main_table] ||= [])
+            joins << clause
+          end
+          return
+        end
+        
         if alias_name != table_name
           @tables << "#{table_name} AS #{alias_name}"
         else
@@ -278,7 +300,7 @@ module QueryBuilder
 
         group = @group
         if !group && @distinct
-          key =  @tables.size > 1 ? "#{main_table}.id" : 'id'
+          key = "#{main_table}.id"
 
           case self.class.adapter
           when 'postgresql'

@@ -89,7 +89,7 @@ after_process_callback:
   context:
     after_filter: '(1 = 1)'
   src: "objects where name like 'a%' or name like 'b%' in site"
-  res: "%Q{SELECT objects.* FROM objects WHERE (1 = 1) AND (objects.name LIKE 'a%' OR objects.name LIKE 'b%') GROUP BY id}"
+  res: "%Q{SELECT objects.* FROM objects WHERE (1 = 1) AND (objects.name LIKE 'a%' OR objects.name LIKE 'b%') GROUP BY objects.id}"
 
 function:
   src: "objects where event_at.year = 2005"
