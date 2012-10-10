@@ -35,8 +35,7 @@ class DummyProcessor < QueryBuilder::Processor
     elsif %w{age size}.include?(field_name)
       tbl = add_key_value_table('idx', 'idx_nodes', field_name) do |tbl_name|
         # This block is only executed once
-        add_filter "#{tbl_name}.node_id = #{table}.id"
-        add_filter "#{tbl_name}.key = #{quote(field_name)}"
+        "#{tbl_name}.node_id = #{table}.id AND #{tbl_name}.key = #{quote(field_name)}"
       end
 
       "#{tbl}.value"
