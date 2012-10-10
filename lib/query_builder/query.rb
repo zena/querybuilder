@@ -5,7 +5,7 @@ module QueryBuilder
     SELECT_WITH_TYPE_REGEX = /^(.*):(.*)$/
     attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
-                  :pagination_key, :main_class, :context, :key_value_tables, :having, :types
+                  :pagination_key, :main_class, :context, :key_value_tables, :join, :having, :types
 
     class << self
       def adapter
@@ -17,7 +17,7 @@ module QueryBuilder
       @processor_class = processor_class
       @tables = []
       @table_alias = {}
-      @join_tables = {}
+      @joins = ''
       @needed_join_tables = {}
       @attributes_alias   = {}
       # Custom select foo as bar:time or 'types:' field in custom query.
@@ -95,6 +95,13 @@ module QueryBuilder
       statement, bind_values = build_statement(type)
       bind_values.empty? ? "%Q{#{statement}}" : "[#{[["%Q{#{statement}}"] + bind_values].join(', ')}]"
     end
+    
+    def sub_find
+      table_list = @tables.join(',') + @joins
+
+      "SELECT #{main_table}.id FROM #{table_list}" + (@where == [] ? '' : " WHERE #{filter}") + @having.to_s
+    end
+    
 
     # Convert the query object into an SQL query.
     #
@@ -119,9 +126,10 @@ module QueryBuilder
 
     # 'avoid_alias' is used when parsing the last element so that it takes the real table name (nodes, not no1). We need
     # this because we can use 'OR' between parts and we thus need the same table reference.
-    def add_table(use_name, table_name = nil, avoid_alias = true, type = nil, &block)
-      alias_name = get_alias(use_name, table_name, avoid_alias)
+    def add_table(use_name, type = nil, avoid_alias = true, table_name = nil, &block)
+      alias_name = get_alias(use_name, avoid_alias)
       add_alias_to_tables(table_name || use_name, alias_name, type, &block)
+      true
     end
 
     # Add a table to 'import' a key/value based field. This method ensures that
@@ -133,7 +141,7 @@ module QueryBuilder
         # done, the index_table has been used for the given key in the current context
       else
         # insert the new table
-        add_table(use_name, index_table, false, :left, &block)
+        add_table(use_name, :left, false, index_table, &block)
         alias_table = key_table[key] = table(use_name)
       end
       alias_table
@@ -168,8 +176,7 @@ module QueryBuilder
         # create join
         first_table = table(table_name1)
 
-        @join_tables[first_table] ||= []
-        @join_tables[first_table] << "#{type} JOIN #{second_table} ON #{clause.gsub('TABLE1',first_table).gsub('TABLE2',second_table)}"
+        @joins << " #{type} JOIN #{second_table} ON #{clause.gsub('TABLE1',first_table).gsub('TABLE2',second_table)}"
         second_table
       end
     end
@@ -177,7 +184,7 @@ module QueryBuilder
     # Duplicate query, avoiding sharing some arrays and hash
     def dup
       other = super
-      %w{tables table_alias where tables key_value_tables}.each do |k|
+      %w{tables table_alias where joins needed_join_tables tables key_value_tables}.each do |k|
         other.send("#{k}=", other.send(k).dup)
       end
       other
@@ -228,13 +235,11 @@ module QueryBuilder
       !@table_alias[use_name].nil?
     end
     
-    
     private
       # Make sure each used table gets a unique name. By default, this uses an alias
       # But if 'avoid_alias' is true and it is the first call for this table, return the
       # table without an alias.
-      def get_alias(use_name, table_name = nil, avoid_alias = true)
-        table_name ||= use_name
+      def get_alias(use_name, avoid_alias = true)
         list = (@table_alias[use_name] ||= [])
         if avoid_alias && !list.include?(use_name)
           alias_name = use_name
@@ -251,19 +256,49 @@ module QueryBuilder
       end
 
       def add_alias_to_tables(table_name, alias_name, type = nil, &block)
+        
         if type
           key = "#{table_name}=#{type}=#{alias_name}"
           
-          @needed_join_tables[key] ||= begin
-            clause = "#{type.to_s.upcase} JOIN #{table_name}"
-            if alias_name && alias_name != table_name
-              clause << " AS #{alias_name}"
+          if !@tables.empty?
+            @needed_join_tables[key] ||= begin
+              new_table = table_name
+              if alias_name && alias_name != table_name
+                new_table = "#{table_name} AS #{alias_name}"
+              end
+              
+              if !@swaped_once && @tables.size == 1 && type == :inner
+                # Yes, all this is ugly but it gets the work done.
+                @swaped_once = true
+                last = @tables.last
+                if type == :inner && table_name == main_table && !(last =~ /#{main_table}/)
+                  # Instead of joining A with MAIN, we swap to have MAIN with A.
+                  @tables = [new_table]
+                  new_table = last
+                end
+              end
+              
+              clause = " #{type.to_s.upcase} JOIN #{new_table}"
+              if block_given?
+                if c = block.call(alias_name || table_name)
+                  clause << " ON #{c}"
+                end
+              end
+              
+              @joins << clause
             end
-            if block_given?
-              clause << " ON #{block.call(alias_name || table_name)}"
+          else
+            # This is the first table (right most). Use clause as filter.
+            if alias_name != table_name
+              @tables << "#{table_name} AS #{alias_name}"
+            else
+              @tables << table_name
             end
-            joins = (@join_tables[main_table] ||= [])
-            joins << clause
+            
+            if c = block.call(alias_name || table_name)
+              add_filter c
+            end
+            
           end
           return
         end
@@ -288,15 +323,7 @@ module QueryBuilder
       end
 
       def find_statement
-        table_list = []
-        @tables.each do |t|
-          table_name = t.split(/\s+/).last # objects AS ob1
-          if joins = @join_tables[table_name]
-            table_list << "#{t} #{joins.join(' ')}"
-          else
-            table_list << t
-          end
-        end
+        table_list = @tables.join(',') + @joins
 
         group = @group
         if !group && @distinct
@@ -314,19 +341,11 @@ module QueryBuilder
           end
         end
 
-        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @having.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @having.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement
-        table_list = []
-        @tables.each do |t|
-          table_name = t.split(/\s+/).last # objects AS ob1
-          if joins = @join_tables[table_name]
-            table_list << "#{t} #{joins.join(' ')}"
-          else
-            table_list << t
-          end
-        end
+        table_list = @tables.join(',') + @joins
 
         if @group =~ /GROUP\s+BY\s+(.+)/
           # we need to COALESCE in order to count groups where $1 is NULL.
@@ -338,7 +357,7 @@ module QueryBuilder
           count_on = "COUNT(*)"
         end
 
-        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}")
+        "SELECT #{count_on} FROM #{table_list}" + (@where == [] ? '' : " WHERE #{filter}")
       end
 
       def get_connection

@@ -12,8 +12,9 @@ class UserProcessor < QueryBuilder::Processor
     case relation
     when 'objects'
       this.apply_scope(default(:scope)) if context[:last]
-      add_table('objects')
-      @query.add_filter "#{table('objects')}.id = #{field_or_attr('node_id')}"
+      add_table('objects', :inner) do |tbl|
+        "#{tbl}.id = #{field_or_attr('node_id')}"
+      end
       change_processor 'DummyProcessor'
     else
       return nil

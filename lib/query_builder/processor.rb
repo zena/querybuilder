@@ -148,10 +148,11 @@ module QueryBuilder
         @sxp = Parser.parse(source)
 
         @context = opts.merge(:first => true, :last => true)
-        @query = Query.new(self.class)
-        @query.main_class = @opts[:main_class] || resolve_main_class(self.class.main_class)
+        
+        @query = make_query_object
+        
         before_process
-
+        
         process_all
 
         after_process
@@ -169,6 +170,12 @@ module QueryBuilder
     end
 
     protected
+      def make_query_object
+        query = Query.new(self.class)
+        query.main_class = @opts[:main_class] || resolve_main_class(self.class.main_class)
+        query
+      end
+    
       def before_process
         (self.class.before_process_callbacks || []).each do |callback|
           send(callback)
@@ -240,50 +247,27 @@ module QueryBuilder
         end
 
         clauses.map! do |clause|
-          query = @query.dup
+          query = make_query_object
           with_query(query) do
             process(clause)
           end
           query
         end
 
-        @query = merge_queries(clauses.reverse)
+        merge_queries(clauses.reverse)
       end
 
       def merge_queries(queries, merge_filters = true)
-        tables = []
-        table_alias = {}
-
+        add_table(main_table)
+        
+        clauses = []
         queries.each do |query|
-          tables += query.tables
-          table_alias.merge!(query.table_alias)
+          clauses << "#{main_table}.id IN (#{query.sub_find})"
         end
+        
+        set_main_class(queries.last.main_class)
 
-        tables.uniq!
-
-        queries.each do |query|
-          missing_tables = tables - query.tables
-          missing_tables.each do |missing_table|
-            if missing_table =~ /^(.+) AS (.+)$/
-              resolve_missing_table(query, $1, $2)
-            else
-              resolve_missing_table(query, missing_table, missing_table)
-            end
-          end
-        end
-
-        query = queries.first
-        query.tables = tables
-        query.table_alias = table_alias
-
-        query.where = [merge_or_filters(queries)] if merge_filters
-
-        query.distinct = true
-
-        # FIXME: !! We need to resolve main_class from different 'or' clauses !!
-        # query.main_class = ...
-
-        query
+        add_filter "(#{clauses.join(' OR ')})"
       end
 
       # Fix every query to work with the final list of tables (insert dummy clauses for example).
@@ -410,11 +394,14 @@ module QueryBuilder
       def apply_scope(scope)
         context[:processing] = :scope
         if fields = scope_fields(scope)
-          add_filter("#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}") if fields != []
+          if fields != []
+            "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}"
+          else
+            nil
+          end
         else
           raise QueryBuilder::SyntaxError.new("Invalid scope '#{scope}'.")
         end
-        true
       end
 
       def field_or_attr(fld_name, table_alias = table)
@@ -513,25 +500,28 @@ module QueryBuilder
       end
 
       def process_or(left, right)
-        left_query  = @query.dup
-        left_query.where = []
-        right_query = @query.dup
-        right_query.where = []
-
-        with_query(left_query) do
-          add_filter process(left)
+        # Left     or    Right
+        # objects where id IN (Left = select id ...) OR objects.id IN (Right = select id ...)
+        
+        query = @query
+        where_bak = query.where
+        
+        # Process LEFT
+        query.where = []
+        add_filter process(left)
+        left_w = query.where
+        
+        # Process RIGHT
+        query.where = []
+        add_filter process(right)
+        right_w = query.where
+        
+        filters = [left_w, right_w].map do |w|
+          w.size > 1 ? "(#{w.reverse.join(' AND ')})" : w
         end
-
-        with_query(right_query) do
-          add_filter process(right)
-        end
-
-        merge_queries([left_query, right_query], false)
-        @query.tables      = left_query.tables
-        @query.table_alias = left_query.table_alias
-        @query.distinct    = left_query.distinct
-
-        merge_or_filters([left_query, right_query])
+        
+        query.where = where_bak
+        "(#{filters.join(' OR ')})"
       end
 
       def with_query(query)
@@ -762,6 +752,8 @@ module QueryBuilder
           value.each do |k,v|
             value[k] = v.to_sym
           end
+        elsif key == :joins
+          parse_custom_query_argument(key, ' ' + (value.kind_of?(Array) ? value.join(' ') : value))
         elsif value.kind_of?(Array)
           value.map {|e| parse_custom_query_argument(key, e)}
         elsif value.kind_of?(Hash)
@@ -791,7 +783,7 @@ module QueryBuilder
       end
 
       # Add a new table and apply scoping when needed
-      def add_table(use_name, table_name = nil, type = nil, &block)
+      def add_table(use_name, type = nil, &block)
         if use_name == main_table
           if first?
             # we are now using final table
@@ -802,24 +794,28 @@ module QueryBuilder
           if context[:scope_type] == :join
             context[:scope_type] = nil
             # pre scope
+            # ???? How does this work with the new INNER JOIN stuff ?
+            
             if context[:scope] && need_join_scope?(context[:scope])
-              @query.add_table(main_table, main_table, avoid_alias)
+              @query.add_table(main_table, nil, avoid_alias)
               apply_scope(context[:scope])
             end
-            @query.add_table(use_name, table_name, avoid_alias, type, &block)
-          elsif context[:scope_type] == :filter
+            @query.add_table(use_name, type, avoid_alias, &block)
+          elsif context[:scope_type] == :filter  
+            
             context[:scope_type] = nil
             # post scope
-            @query.add_table(use_name, table_name, avoid_alias)
-            apply_scope(context[:scope] || default_scope(context))
+            @query.add_table(use_name, :inner, avoid_alias) do
+              apply_scope(context[:scope] || default_scope(context))
+            end
           else
             # scope already applied / skip
-            @query.add_table(use_name, table_name, avoid_alias, type, &block)
+            @query.add_table(use_name, type, avoid_alias, &block)
           end
         else
           # no scope
           # can only scope main_table
-          @query.add_table(use_name, table_name, true, type, &block)
+          @query.add_table(use_name, type, true, &block)
         end
       end
 

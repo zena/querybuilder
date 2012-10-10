@@ -15,15 +15,15 @@ not_equal_alt:
   
 recipients_where_kpath:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM objects INNER JOIN links ON links.target_id = objects.id WHERE objects.kpath LIKE 'NRCC%' AND links.source_id = ? AND links.relation_id = 4}, id]"
 
 hand_made_class_filter:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM objects INNER JOIN links ON links.target_id = objects.id WHERE objects.kpath LIKE 'NRCC%' AND links.source_id = ? AND links.relation_id = 4}, id]"
 
 better_class_filter:
   src: "recipients where class = 'Client'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, \"NRCC%\", id]"
+  res: "[%Q{SELECT objects.* FROM objects INNER JOIN links ON links.target_id = objects.id WHERE objects.kpath LIKE ? AND links.source_id = ? AND links.relation_id = 4}, \"NRCC%\", id]"
 
 like_filter_with_scope:
   src: "letters where name like 'a%' in site"
@@ -41,7 +41,7 @@ letters_group_by_name:
 
 recipients_group_by_name:
   sxp: '[:query, [:group, [:relation, "recipients"], [:field, "name"]]]'
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.name}, id]"
+  res: "[%Q{SELECT objects.* FROM objects INNER JOIN links ON links.target_id = objects.id WHERE links.source_id = ? AND links.relation_id = 4 GROUP BY objects.name}, id]"
 
 custom_query_having:
   context:
@@ -93,19 +93,19 @@ equation_with_date_interval:
 equation_and_or_par:
   src: "objects where event_at > '2006-04-01' or name like 'foo%'"
   sxp: '[:query, [:filter, [:relation, "objects"], [:or, [:>, [:field, "event_at"], [:string, "2006-04-01"]], [:like, [:field, "name"], [:string, "foo%"]]]]]'
-  res: "[%Q{SELECT objects.* FROM objects WHERE (objects.event_at > '2006-04-01' OR objects.name LIKE 'foo%') AND objects.parent_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects WHERE (objects.event_at > '2006-04-01' OR objects.name LIKE 'foo%') AND objects.parent_id = ?}, id]"
 
 or_with_same_tables:
   src: "objects where age = 5 or age = 7"
-  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE (id1.value = 5 OR id1.value = 7) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE (id1.value = 5 OR id1.value = 7) AND objects.parent_id = ?}, id]"
 
 or_with_missing_table:
   src: "objects where age = 5 or id = 7"
-  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE (id1.value = 5 OR objects.id = 7) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE (id1.value = 5 OR objects.id = 7) AND objects.parent_id = ?}, id]"
 
 or_different_table:
   src: "objects where age = 5 or size = 15"
-  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE (id1.value = 5 OR id1.value = 15) AND objects.parent_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' LEFT JOIN idx_nodes AS id2 ON id2.node_id = objects.id AND id2.key = 'size' WHERE (id1.value = 5 OR id2.value = 15) AND objects.parent_id = ?}, id]"
 
 and_with_same_tables:
   src: "objects where age > 5 and age < 7"

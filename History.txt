@@ -1,3 +1,9 @@
+== 1.2.0 2012-10-10
+
+* Major enhancement
+  * All relations now use INNER JOIN with ON clause instead of using the WHERE filter. Custom processors *MUST*
+    be changed to use the new add_table with :inner join type instead of using where filters.
+
 == 1.1.4 2012-10-10
 
 * Major enhancement

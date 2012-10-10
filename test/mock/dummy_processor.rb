@@ -108,9 +108,10 @@ class DummyProcessor < QueryBuilder::Processor
     def class_relation(relation)
       case relation
       when 'users'
+        add_table('users', :inner) do |tbl|
+          "#{tbl}.node_id = #{field_or_attr('id', table(self.class.main_table))}"
+        end
         change_processor 'UserProcessor'
-        add_table('users')
-        add_filter "#{table('users')}.node_id = #{field_or_attr('id', table(self.class.main_table))}"
         return true
       else
         return nil
@@ -130,8 +131,10 @@ class DummyProcessor < QueryBuilder::Processor
         return nil
       end
 
-      add_table(main_table)
-      add_filter "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}"
+      add_table(main_table, :inner) do |tbl|
+        "#{field_or_attr(fields[0])} = #{field_or_attr(fields[1], table(main_table, -1))}"
+      end
+      true
     end
 
     # Filtering of objects in scope
@@ -164,13 +167,19 @@ class DummyProcessor < QueryBuilder::Processor
       else
         return false
       end
-
-      add_table(main_table)
-      add_table('links')
-      # source --> target
-      add_filter "#{table('links')}.#{fields[0]} = #{field_or_attr('id', table(main_table,-1))}"
-      add_filter "#{table('links')}.relation_id = #{fields[1]}"
-      add_filter "#{field_or_attr('id')} = #{table('links')}.#{fields[2]}"
+      
+      add_table('links', :inner) do |lnk|
+        # Evaluate JOIN clause
+        # source --> target
+        %Q{#{lnk}.#{fields[0]} = #{field_or_attr('id', table(main_table))} AND #{lnk}.relation_id = #{fields[1]}}
+      end
+  
+  
+      add_table(main_table, :inner) do |tbl|
+        "#{table('links')}.#{fields[2]} = #{tbl}.id"
+      end
+      
+      true
     end
 
     def insert_after_filter

@@ -1,14 +1,14 @@
 users_from_objects:
   sxp: '[:query, [:from, [:relation, "users"], [:relation, "objects"]]]'
-  res: "TestUser: [%Q{SELECT users.* FROM objects AS ob1,users WHERE users.node_id = ob1.id AND ob1.parent_id = ? GROUP BY users.id ORDER BY users.name ASC, users.first_name ASC}, id]"
+  res: "TestUser: [%Q{SELECT users.* FROM objects AS ob1 INNER JOIN users ON users.node_id = ob1.id WHERE ob1.parent_id = ? GROUP BY users.id ORDER BY users.name ASC, users.first_name ASC}, id]"
 
 users_where_name_from_objects:
   src: "users where name eq 'bob' from objects"
-  res: "TestUser: [%Q{SELECT users.* FROM objects AS ob1,users WHERE users.name = 'bob' AND users.node_id = ob1.id AND ob1.parent_id = ? GROUP BY users.id ORDER BY users.name ASC, users.first_name ASC}, id]"
+  res: "TestUser: [%Q{SELECT users.* FROM objects AS ob1 INNER JOIN users ON users.node_id = ob1.id WHERE users.name = 'bob' AND ob1.parent_id = ? GROUP BY users.id ORDER BY users.name ASC, users.first_name ASC}, id]"
   
 objects_from_users_from_objects:
   src: "objects from users where name = 'foo' from objects where event_at > REF_DATE order by event_at asc"
-  res: "[%Q{SELECT objects.* FROM objects,objects AS ob1,users AS us1 WHERE objects.id = us1.node_id AND us1.name = 'foo' AND us1.node_id = ob1.id AND ob1.event_at > now() AND ob1.parent_id = ? GROUP BY objects.id ORDER BY objects.event_at ASC}, id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN users ON users.node_id = ob1.id INNER JOIN objects ON objects.id = users.node_id WHERE users.name = 'foo' AND ob1.event_at > now() AND ob1.parent_id = ? GROUP BY objects.id ORDER BY objects.event_at ASC}, id]"
 
 users:
   res: "TestUser: [%Q{SELECT users.* FROM users WHERE users.node_id = ? ORDER BY users.name ASC, users.first_name ASC}, id]"

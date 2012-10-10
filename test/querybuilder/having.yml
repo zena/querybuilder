@@ -5,4 +5,4 @@ simple:
 
 having_order:
   src: "recipients from letters select amount.sum as tot_amount group by id having tot_amount > 2000"
-  res: "[%Q{SELECT objects.*,SUM(ob1.amount) AS \"tot_amount\" FROM links,objects,objects AS ob1 WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ob1.id AND ob1.kpath LIKE 'NNL%' AND ob1.parent_id = ? GROUP BY objects.id HAVING \"tot_amount\" > 2000}, id]"
+  res: "[%Q{SELECT objects.*,SUM(ob1.amount) AS \"tot_amount\" FROM objects AS ob1 INNER JOIN links ON links.source_id = ob1.id AND links.relation_id = 4 INNER JOIN objects ON links.target_id = objects.id WHERE ob1.kpath LIKE 'NNL%' AND ob1.parent_id = ? GROUP BY objects.id HAVING \"tot_amount\" > 2000}, id]"

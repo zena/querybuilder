@@ -1,23 +1,27 @@
 
 icons_from_recipients:
   sxp: '[:query, [:from, [:relation, "icons"], [:relation, "recipients"]]]'
-  res: "[%Q{SELECT objects.* FROM links,links AS li1,objects,objects AS ob1 WHERE objects.id = li1.source_id AND li1.relation_id = 5 AND li1.target_id = ob1.id AND ob1.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN links ON links.target_id = ob1.id INNER JOIN links AS li2 ON li2.target_id = ob1.id AND li2.relation_id = 5 INNER JOIN objects ON li2.source_id = objects.id WHERE links.source_id = ? AND links.relation_id = 4 GROUP BY objects.id}, id]"
 
 icons_from_recipients_from_letters:
   sxp: '[:query, [:from, [:from, [:relation, "icons"], [:relation, "recipients"]], [:relation, "letters"]]]'
 
 letters_from_recipients:
-  res: "[%Q{SELECT objects.* FROM links,objects,objects AS ob1 WHERE objects.kpath LIKE 'NNL%' AND objects.parent_id = ob1.id AND ob1.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN links ON links.target_id = ob1.id INNER JOIN objects ON objects.parent_id = ob1.id WHERE objects.kpath LIKE 'NNL%' AND links.source_id = ? AND links.relation_id = 4 GROUP BY objects.id}, id]"
 
 objects_from_recipients:
-  res: "[%Q{SELECT objects.* FROM links,objects,objects AS ob1 WHERE objects.parent_id = ob1.id AND ob1.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN links ON links.target_id = ob1.id INNER JOIN objects ON objects.parent_id = ob1.id WHERE links.source_id = ? AND links.relation_id = 4 GROUP BY objects.id}, id]"
+
+objects_from_recipients_key_filter:
+  src: "objects where age > 4 from recipients"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN links ON links.target_id = ob1.id INNER JOIN objects ON objects.parent_id = ob1.id LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE id1.value > 4 AND links.source_id = ? AND links.relation_id = 4 GROUP BY objects.id}, id]"
 
 parent_from_parent:
   sxp: '[:query, [:from, [:relation, "parent"], [:relation, "parent"]]]'
-  res: "[%Q{SELECT objects.* FROM objects,objects AS ob1 WHERE objects.id = ob1.parent_id AND ob1.id = ? GROUP BY objects.id}, parent_id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN objects ON objects.id = ob1.parent_id WHERE ob1.id = ? GROUP BY objects.id}, parent_id]"
 
 children_from_objects_in_project:
-  res: "[%Q{SELECT objects.* FROM objects,objects AS ob1 WHERE objects.parent_id = ob1.id AND ob1.project_id = ? GROUP BY objects.id}, project_id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN objects ON objects.parent_id = ob1.id WHERE ob1.project_id = ? GROUP BY objects.id}, project_id]"
 
 tags:
   sxp: '[:query, [:relation, "tags"]]'
@@ -34,9 +38,9 @@ complex_from_with_scopes_and_typed_scope:
 
 letters_in_project_from_letters:
   sxp: '[:query, [:from, [:scope, [:relation, "letters"], "project"], [:relation, "letters"]]]'
-  res: "[%Q{SELECT objects.* FROM objects,objects AS ob1 WHERE objects.kpath LIKE 'NNL%' AND objects.project_id = ob1.id AND ob1.kpath LIKE 'NNL%' AND ob1.parent_id = ? GROUP BY objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN objects ON objects.project_id = ob1.id WHERE objects.kpath LIKE 'NNL%' AND ob1.kpath LIKE 'NNL%' AND ob1.parent_id = ? GROUP BY objects.id}, id]"
 
 letters_in_project_from_letters_group_by:
   src: "letters in project from letters group by name,id"
   sxp: '[:query, [:group, [:from, [:scope, [:relation, "letters"], "project"], [:relation, "letters"]], [:field, "name"], [:field, "id"]]]'
-  res: "[%Q{SELECT objects.* FROM objects,objects AS ob1 WHERE objects.kpath LIKE 'NNL%' AND objects.project_id = ob1.id AND ob1.kpath LIKE 'NNL%' AND ob1.parent_id = ? GROUP BY objects.name, objects.id}, id]"
+  res: "[%Q{SELECT objects.* FROM objects AS ob1 INNER JOIN objects ON objects.project_id = ob1.id WHERE objects.kpath LIKE 'NNL%' AND ob1.kpath LIKE 'NNL%' AND ob1.parent_id = ? GROUP BY objects.name, objects.id}, id]"
