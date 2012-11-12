@@ -113,7 +113,7 @@ and_with_same_tables:
 
 and_with_same_tables_different_key:
   src: "objects where age > 5 and size = 10"
-  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE id1.value > 5 AND id1.value = 10 AND objects.parent_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' LEFT JOIN idx_nodes AS id2 ON id2.node_id = objects.id AND id2.key = 'size' WHERE id1.value > 5 AND id2.value = 10 AND objects.parent_id = ?}, id]"
 
 
 filter_and_order_index:

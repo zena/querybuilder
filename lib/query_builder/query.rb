@@ -3,7 +3,7 @@ require 'active_record'
 module QueryBuilder
   class Query
     SELECT_WITH_TYPE_REGEX = /^(.*):(.*)$/
-    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :where,
+    attr_accessor :processor_class, :distinct, :select, :tables, :table_alias, :unique_alias, :where,
                   :limit, :offset, :page_size, :order, :group, :error, :attributes_alias,
                   :pagination_key, :main_class, :context, :key_value_tables, :having, :types
 
@@ -16,8 +16,9 @@ module QueryBuilder
     def initialize(processor_class)
       @processor_class = processor_class
       @tables = []
-      @table_alias = {}
-      @join_tables = {}
+      @table_alias  = {}
+      @unique_alias = {}
+      @join_tables  = {}
       @needed_join_tables = {}
       @attributes_alias   = {}
       # Custom select foo as bar:time or 'types:' field in custom query.
@@ -177,7 +178,7 @@ module QueryBuilder
     # Duplicate query, avoiding sharing some arrays and hash
     def dup
       other = super
-      %w{tables table_alias where tables key_value_tables}.each do |k|
+      %w{tables table_alias unique_alias where tables key_value_tables}.each do |k|
         other.send("#{k}=", other.send(k).dup)
       end
       other
@@ -228,18 +229,24 @@ module QueryBuilder
       # Make sure each used table gets a unique name
       def get_alias(use_name, table_name = nil, avoid_alias = true)
         table_name ||= use_name
-        @table_alias[use_name] ||= []
+
+        base = use_name[0..1]
+        list  = (@unique_alias[base] ||= [])
+        list2 = @table_alias[use_name] ||= []
         if avoid_alias && !@tables.include?(table_name)
           alias_name = use_name
         elsif @tables.include?(use_name)
           # links, li1, li2, li3
-          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size}"
+          alias_name = "#{base}#{list.size}"
         else
           # ob1, obj2, objects
-          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
+          alias_name = "#{base}#{list.size + 1}"
         end
 
-        @table_alias[use_name] << alias_name
+        # We add to both because @table_alias[use_name] is used in table(use_name)
+        # and @table_alias[use_name]
+        list  << alias_name
+        list2 << alias_name
         alias_name
       end
 
