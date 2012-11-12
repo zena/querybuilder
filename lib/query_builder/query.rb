@@ -131,12 +131,12 @@ module QueryBuilder
       key_table = (key_tables[use_name] ||= {})
       if alias_table = key_table[key]
         # done, the index_table has been used for the given key in the current context
+        alias_table
       else
         # insert the new table
-        add_table(use_name, index_table, false, :left, &block)
-        alias_table = key_table[key] = table(use_name)
+        # Let caller configure the filter with &block.
+        key_table[key] = add_table(use_name + "_#{key}", index_table, false, :left, &block)
       end
-      alias_table
     end
 
     def add_select(field, fname)
@@ -223,56 +223,57 @@ module QueryBuilder
     def quote_column_name(name)
       connection.quote_column_name(name)
     end
-    
-    def has_table?(use_name)
-      !@table_alias[use_name].nil?
-    end
-    
-    
+
     private
-      # Make sure each used table gets a unique name. By default, this uses an alias
-      # But if 'avoid_alias' is true and it is the first call for this table, return the
-      # table without an alias.
+      # Make sure each used table gets a unique name
       def get_alias(use_name, table_name = nil, avoid_alias = true)
         table_name ||= use_name
-        list = (@table_alias[use_name] ||= [])
-        if avoid_alias && !list.include?(use_name)
+        @table_alias[use_name] ||= []
+        if avoid_alias && !@tables.include?(table_name)
           alias_name = use_name
         elsif @tables.include?(use_name)
           # links, li1, li2, li3
-          alias_name = "#{use_name[0..1]}#{list.size}"
+          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size}"
         else
           # ob1, obj2, objects
-          alias_name = "#{use_name[0..1]}#{list.size + 1}"
+          alias_name = "#{use_name[0..1]}#{@table_alias[use_name].size + 1}"
         end
 
-        list << alias_name
+        @table_alias[use_name] << alias_name
         alias_name
       end
 
       def add_alias_to_tables(table_name, alias_name, type = nil, &block)
+        if block_given?
+          on_clause = "#{block.call(alias_name)}"
+        end
+        
         if type
           key = "#{table_name}=#{type}=#{alias_name}"
-          
           @needed_join_tables[key] ||= begin
-            clause = "#{type.to_s.upcase} JOIN #{table_name}"
-            if alias_name && alias_name != table_name
-              clause << " AS #{alias_name}"
-            end
-            if block_given?
-              clause << " ON #{block.call(alias_name || table_name)}"
-            end
+            table_name = "#{type.to_s.upcase} JOIN #{table_name}"
             joins = (@join_tables[main_table] ||= [])
-            joins << clause
+            on_clause = on_clause ? " ON #{on_clause}" : ''
+            joins << (alias_name ? "#{table_name} AS #{alias_name}#{on_clause}" : "#{table_name}#{on_clause}")
           end
-          return
+          return alias_name
+        end
+        
+        if on_clause && @tables.empty?
+          # NO JOIN
+          @where << on_clause
+          on_clause = ''
+        elsif on_clause
+          on_clause = " ON #{on_clause}"
         end
         
         if alias_name != table_name
-          @tables << "#{table_name} AS #{alias_name}"
+          @tables << "#{table_name} AS #{alias_name}#{on_clause}"
         else
-          @tables << table_name
+          @tables << "#{table_name}#{on_clause}"
         end
+        
+        alias_name
       end
 
       def build_statement(type = :find)
@@ -314,7 +315,7 @@ module QueryBuilder
           end
         end
 
-        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @having.to_s + @order.to_s + @limit.to_s + @offset.to_s
+        "SELECT#{distinct} #{(@select || ["#{main_table}.*"]).join(',')} FROM #{table_list.flatten.sort.join(' JOIN ')}" + (@where == [] ? '' : " WHERE #{filter}") + group.to_s + @having.to_s + @order.to_s + @limit.to_s + @offset.to_s
       end
 
       def count_statement

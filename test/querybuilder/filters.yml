@@ -15,15 +15,15 @@ not_equal_alt:
   
 recipients_where_kpath:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM links JOIN objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
 
 hand_made_class_filter:
   src: "recipients where kpath like 'NRCC%'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM links JOIN objects WHERE objects.kpath LIKE 'NRCC%' AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, id]"
 
 better_class_filter:
   src: "recipients where class = 'Client'"
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, \"NRCC%\", id]"
+  res: "[%Q{SELECT objects.* FROM links JOIN objects WHERE objects.kpath LIKE ? AND objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ?}, \"NRCC%\", id]"
 
 like_filter_with_scope:
   src: "letters where name like 'a%' in site"
@@ -41,7 +41,7 @@ letters_group_by_name:
 
 recipients_group_by_name:
   sxp: '[:query, [:group, [:relation, "recipients"], [:field, "name"]]]'
-  res: "[%Q{SELECT objects.* FROM links,objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.name}, id]"
+  res: "[%Q{SELECT objects.* FROM links JOIN objects WHERE objects.id = links.target_id AND links.relation_id = 4 AND links.source_id = ? GROUP BY objects.name}, id]"
 
 custom_query_having:
   context:
@@ -113,7 +113,7 @@ and_with_same_tables:
 
 and_with_same_tables_different_key:
   src: "objects where age > 5 and size = 10"
-  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' LEFT JOIN idx_nodes AS id2 ON id2.node_id = objects.id AND id2.key = 'size' WHERE id1.value > 5 AND id2.value = 10 AND objects.parent_id = ?}, id]"
+  res: "[%Q{SELECT objects.* FROM objects LEFT JOIN idx_nodes AS id1 ON id1.node_id = objects.id AND id1.key = 'age' WHERE id1.value > 5 AND id1.value = 10 AND objects.parent_id = ?}, id]"
 
 
 filter_and_order_index:

@@ -792,13 +792,15 @@ module QueryBuilder
 
       # Add a new table and apply scoping when needed
       def add_table(use_name, table_name = nil, type = nil, &block)
+        if use_name == main_table && first?
+          # we are now using final table
+          context[:table_alias] = use_name
+          avoid_alias = true
+        else
+          avoid_alias = false
+        end
+
         if use_name == main_table
-          if first?
-            # we are now using final table
-            context[:table_alias] = use_name
-            avoid_alias = true
-          end
-          
           if context[:scope_type] == :join
             context[:scope_type] = nil
             # pre scope
@@ -806,12 +808,14 @@ module QueryBuilder
               @query.add_table(main_table, main_table, avoid_alias)
               apply_scope(context[:scope])
             end
+            
             @query.add_table(use_name, table_name, avoid_alias, type, &block)
           elsif context[:scope_type] == :filter
             context[:scope_type] = nil
             # post scope
-            @query.add_table(use_name, table_name, avoid_alias)
+            tbl = @query.add_table(use_name, table_name, avoid_alias, &block)
             apply_scope(context[:scope] || default_scope(context))
+            tbl
           else
             # scope already applied / skip
             @query.add_table(use_name, table_name, avoid_alias, type, &block)

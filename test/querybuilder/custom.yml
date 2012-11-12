@@ -41,13 +41,13 @@ it_should_not_use_the_first_table_as_main:
   context:
     custom_query_group: test
   src: "two_table where x = '4' and name like 'b%'"
-  res: "%Q{SELECT x AS x,IF(table_one.y,table_one.y,table_two.z) AS y,table_two.name FROM table_one,table_two WHERE (x) = '4' AND table_one.name LIKE 'b%'}"
+  res: "%Q{SELECT x AS x,IF(table_one.y,table_one.y,table_two.z) AS y,table_two.name FROM table_one JOIN table_two WHERE (x) = '4' AND table_one.name LIKE 'b%'}"
 
 it_should_use_main_table_as_main:
   context:
     custom_query_group: test
   src: "two_table_main where name = '4'"
-  res: "%Q{SELECT x FROM foo,table_one,table_two WHERE foo.name = '4'}"
+  res: "%Q{SELECT x FROM foo JOIN table_one JOIN table_two WHERE foo.name = '4'}"
 
 it_should_limit_the_entries:
   context:

@@ -1,3 +1,10 @@
+== 1.2.0
+
+* Major enhancement
+  * All tables are now added to query with JOIN.
+  * "add_table" takes a block to configure join clause.
+
+
 == 1.1.4 2012-10-07
 
 * Major enhancement
