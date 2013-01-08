@@ -346,7 +346,7 @@ module QueryBuilder
           count_on = "COUNT(*)"
         end
 
-        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(',')}" + (@where == [] ? '' : " WHERE #{filter}")
+        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(' JOIN ')}" + (@where == [] ? '' : " WHERE #{filter}")
       end
 
       def get_connection
