@@ -3,6 +3,7 @@
 * Major enhancement
   * All tables are now added to query with JOIN.
   * "add_table" takes a block to configure join clause.
+  * Fixed count queries with group and having clauses.
 
 
 == 1.1.4 2012-10-07
