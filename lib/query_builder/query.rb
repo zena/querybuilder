@@ -346,7 +346,8 @@ module QueryBuilder
           count_on = "COUNT(*)"
         end
 
-        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(' JOIN ')}" + (@where == [] ? '' : " WHERE #{filter}")
+        # We need the group clause in case the query uses MIN or MAX.
+        "SELECT #{count_on} FROM #{table_list.flatten.sort.join(' JOIN ')}" + (@where == [] ? '' : " WHERE #{filter}#{@group}#{@having}")
       end
 
       def get_connection
