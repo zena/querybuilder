@@ -1,10 +1,14 @@
-== 1.2.0
+== 1.2.1 2013-03-11
 
 * Major enhancement
-  * All tables are now added to query with JOIN.
   * "add_table" takes a block to configure join clause.
   * Fixed count queries with group and having clauses.
 
+== 1.2.0 2012-10-10
+
+* Major enhancement
+  * All relations now use INNER JOIN with ON clause instead of using the WHERE filter. Custom processors *MUST*
+    be changed to use the new add_table with :inner join type instead of using where filters.
 
 == 1.1.4 2012-10-07
 
