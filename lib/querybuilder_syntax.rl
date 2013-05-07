@@ -40,9 +40,9 @@
 
   scope    = ws+ 'in' ws var %scope;
 
-  offset   = ws+ 'offset' %offset integer;
+  offset   = ws+ 'offset' %offset literal;
   paginate = ws+ 'paginate' %paginate var %param;
-  limit    = ws+ 'limit' %limit integer (ws* ',' integer)?;
+  limit    = ws+ 'limit' %limit literal (ws* ',' literal)?;
   direction= ws+ ('asc' | 'desc' | 'ASC' | 'DESC') $str_a %direction;
   order    = ws+ 'order' ws+ 'by' %order field (direction)? (ws* ',' field (direction)?)*;
   group    = ws+ 'group'  ws+ 'by' %group field (ws* ',' field)*;

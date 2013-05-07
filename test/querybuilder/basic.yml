@@ -53,6 +53,11 @@ limit_with_order:
   src: "objects in project order by name desc limit 10"
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? ORDER BY objects.name DESC LIMIT 10}, project_id]"
 
+limit_dyn:
+  src: "objects in project limit #{num || 10}"
+  sxp: '[:query, [:limit, [:scope, [:relation, "objects"], "project"], [:rubyless, "num || 10"]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT ?}, project_id, (num or 10)]"
+
 offset_in_limit:
   src: "objects in project limit 3,2"
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2 OFFSET 3}, project_id]"
@@ -62,6 +67,16 @@ offset:
   sxp: '[:query, [:offset, [:limit, [:scope, [:relation, "objects"], "project"], [:integer, "2"]], [:integer, "3"]]]'
   res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2 OFFSET 3}, project_id]"
 
+offset_dyn:
+  src: "objects in project limit 2 offset #{num || 0}"
+  sxp: '[:query, [:offset, [:limit, [:scope, [:relation, "objects"], "project"], [:integer, "2"]], [:rubyless, "num || 0"]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT 2 OFFSET ?}, project_id, (num or 0)]"
+
+limit_offset_dyn:
+  src: "objects in project limit #{num || 10}, #{num || 0}"
+  sxp: '[:query, [:limit, [:scope, [:relation, "objects"], "project"], [:rubyless, "num || 10"], [:rubyless, "num || 0"]]]'
+  res: "[%Q{SELECT objects.* FROM objects WHERE objects.project_id = ? LIMIT ? OFFSET ?}, project_id, (num or 0), (num or 10)]"
+  
 paginate:
   src: "objects in site limit 2 paginate p"
   sxp: '[:query, [:paginate, [:limit, [:scope, [:relation, "objects"], "site"], [:integer, "2"]], [:param, "p"]]]'

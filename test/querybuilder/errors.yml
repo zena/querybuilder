@@ -50,3 +50,12 @@ bad_select:
 bad_having:
   src: "letters select name as fname having foo = 'foo'"
   res: "Unknown field 'foo'."
+
+offset_dyn_nil:
+  src: "objects in project limit 2 offset #{num}"
+  sxp: '[:query, [:offset, [:limit, [:scope, [:relation, "objects"], "project"], [:integer, "2"]], [:rubyless, "num"]]]'
+  res: "Invalid offset (value could be nil)"
+
+paginate_dyn_limit:
+  src: "objects in project limit #{num} paginate p"
+  res: "Limit value must be a fixed number to use pagination."

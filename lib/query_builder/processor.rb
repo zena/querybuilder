@@ -32,7 +32,11 @@ module QueryBuilder
       end
 
       def insert_bind(str)
-        "[[#{str}]]"
+        if str.kind_of?(::RubyLess::TypedString)
+          ::RubyLess::TypedString.new("[[#{str}]]", str.opts)
+        else
+          "[[#{str}]]"
+        end
       end
 
       # Load prepared SQL definitions from a set of directories. If the file does not contain "group" or "groups" keys,
@@ -607,6 +611,12 @@ module QueryBuilder
       def process_offset(query, offset)
         process(query)
         raise QueryBuilder::SyntaxError.new("Invalid offset (used without limit).") unless @query.limit
+        off = process(offset)
+        if off.kind_of?(RubyLess::TypedString)
+          # Make sure we get a number
+          raise QueryBuilder::SyntaxError.new("Invalid offset (value is not a number)") unless off.klass <= Number
+          raise QueryBuilder::SyntaxError.new("Invalid offset (value could be nil)") if off.could_be_nil?
+        end
         context[:processing] = :limit
         @query.offset = " OFFSET #{process(offset)}"
       end
@@ -621,7 +631,7 @@ module QueryBuilder
           @query.offset = " OFFSET #{insert_bind("((#{fld}.to_i > 0 ? #{fld}.to_i : 1)-1)*#{@query.page_size}")}"
           @query.pagination_key ||= paginate_fld.last
         else
-          raise QueryBuilder::SyntaxError.new("Invalid paginate clause '#{paginate}'.")
+          raise QueryBuilder::SyntaxError.new("Limit value must be a fixed number to use pagination.")
         end
       end
 

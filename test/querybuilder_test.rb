@@ -9,11 +9,13 @@ class DummyQueryBuilder < Test::Unit::TestCase
   include RubyLess::SafeClass
   safe_method :params => {:class => StringHash, :method => 'get_params'}
   safe_method :id => Number, :parent_id => Number, :project_id => Number
+  safe_method :num => {:class => Number, :nil => true}
 
   safe_method_for StringHash, [:[], Symbol] => String
   safe_method_for StringHash, [:[], String] => String
 
   def id;         123;  end
+  def num;          2;  end
   def parent_id;  333;  end
   def project_id; 9999; end
 
