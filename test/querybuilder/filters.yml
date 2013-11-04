@@ -180,6 +180,9 @@ filter_quote_string:
   src: "objects where name = \"l'avion\""
   sql: "SELECT objects.* FROM objects WHERE objects.name = 'l''avion' AND objects.parent_id = 123"
 
+filter_quote_ruby_in_string:
+  src: "objects where name = '#{hop}'"
+  res: "/unknown method 'hop/"
 
 field_with_digits:
   src: "objects where idx_foo1 is not null"

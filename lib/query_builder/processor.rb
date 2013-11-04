@@ -495,15 +495,13 @@ module QueryBuilder
         content.first == :or ? process(content) : "(#{process(content)})"
       end
 
-      def process_string(string)
-        quote(string)
-      end
-
       def process_dstring(string)
         raise QueryBuilder::SyntaxError.new("Cannot parse rubyless (missing binding context).") unless helper = @rubyless_helper
         res = RubyLess.translate_string(helper, string)
         res.literal ? quote(res.literal) : insert_bind(res)
       end
+      
+      alias process_string process_dstring
 
       def process_rubyless(string)
         # compile RubyLess...
@@ -697,7 +695,7 @@ module QueryBuilder
 
       def change_processor(processor, opts = {})
         if @this
-          @this.change_processor(processor)
+          @this.change_processor(processor, opts)
         else
           if processor.kind_of?(String)
             processor = QueryBuilder.resolve_const(processor)
@@ -706,7 +704,7 @@ module QueryBuilder
           if processor.kind_of?(Processor)
             # instance of processor
           elsif processor <= Processor
-            processor = processor.new(this, opts)
+            processor = processor.new(this, {:rubyless_helper => @rubyless_helper}.merge(opts))
           else
             raise QueryBuilder::SyntaxError.new("Cannot use #{processor} as Query compiler (not a QueryBuilder::Processor).")
           end
@@ -714,6 +712,7 @@ module QueryBuilder
           @query.processor_class = processor.class
           @query.main_class = processor.resolve_main_class(processor.class.main_class)
           update_processor(processor)
+          
         end
       end
 
