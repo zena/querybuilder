@@ -143,6 +143,10 @@ match:
   src: "objects where fulltext match 'one'"
   sxp: '[:query, [:filter, [:relation, "objects"], [:match, [:field, "fulltext"], [:string, "one"]]]]'
 
+not_match:
+  src: "objects where fulltext not match 'one'"
+  sxp: '[:query, [:filter, [:relation, "objects"], [:not, [:match, [:field, "fulltext"], [:string, "one"]]]]]'
+
 functions:
   src: "objects where event_at.year = REF_DATE.year"
   sxp: '[:query, [:filter, [:relation, "objects"], [:"=", [:function, [:field, "event_at"], [:method, "year"]], [:function, [:field, "REF_DATE"], [:method, "year"]]]]]'
