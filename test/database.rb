@@ -1,6 +1,3 @@
-require 'active_record'
-require 'logger'
-
 begin
   class QueryBuilderTestMigration < ActiveRecord::Migration
     def self.up
