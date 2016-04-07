@@ -2,31 +2,6 @@ require 'rubygems'
 require 'rake'
 require(File.join(File.dirname(__FILE__), 'lib/query_builder/info'))
 
-begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |gem|
-    gem.version = QueryBuilder::VERSION
-    gem.name = 'querybuilder'
-    gem.summary = %Q{QueryBuilder is an interpreter for the "pseudo sql" language.}
-    gem.description = %Q{QueryBuilder is an interpreter for the "pseudo sql" language. This language
-    can be used for two purposes:
-
-     1. protect your database from illegal SQL by securing queries
-     2. ease writing complex relational queries by abstracting table internals}
-    gem.email = "gaspard@teti.ch"
-    gem.homepage = "http://zenadmin.org/524"
-    gem.authors = ["Gaspard Bucher"]
-    gem.add_dependency "rubyless", ">= 0.7.0"
-    gem.add_development_dependency "shoulda", ">= 0"
-    gem.add_development_dependency "yamltest", ">= 0.5.0"
-    gem.extensions << 'lib/extconf.rb'
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
-  end
-  Jeweler::GemcutterTasks.new
-rescue LoadError
-  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
-end
-
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'
