@@ -7,7 +7,7 @@ require 'querybuilder'
 require 'shoulda'
 require 'yamltest'
 require 'logger'
-
+require "active_support"
 require 'mock/dummy_processor'
 require 'mock/user_processor'
 require 'mock/dummy'

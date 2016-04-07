@@ -220,13 +220,13 @@ module QueryBuilder
         return sxp if sxp.kind_of?(String)
         op = OPERATOR_TO_METHOD[sxp.first] || sxp.first
         method = "process_#{op}"
-        if this.respond_to?(method)
+        if this.respond_to?(method,true)
           this.send(method, *sxp[1..-1])
         elsif sxp.size == 3
           op = METHOD_TO_OPERATOR[op] || sxp.first
           this.process_op(*([op] + sxp[1..-1]))
         else
-          raise QueryBuilder::SyntaxError.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented.")
+          raise QueryBuilder::SyntaxError.new("Method '#{method}' to handle #{sxp.first.inspect} not implemented")
         end
       end
 
