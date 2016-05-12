@@ -3,8 +3,8 @@ source "https://rubygems.org"
 
 gem "rubyless", "0.9.0", :git=>'git@github.com:zena/rubyless.git'
 gem "yamltest",'0.9.0', :path=>'../yamltest'
-gem "activerecord", "2.3.18"
-gem "activesupport", "2.3.18"
+gem "activerecord", "3.2.22.2"
+gem "activesupport", "3.2.22.2"
 gem "sqlite3", "1.3.11"
 gem "rake", "10.4.2"
 gem "rdoc", "3.12"
