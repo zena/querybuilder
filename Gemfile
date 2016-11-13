@@ -1,8 +1,8 @@
 # A sample Gemfile
 source "https://rubygems.org"
 
-gem "rubyless", "0.9.0", :git=>'git@github.com:zena/rubyless.git'
-gem "yamltest",'0.9.0', :path=>'../yamltest'
+gem "rubyless", "0.9.0", :git=>'https://github.com/zena/rubyless.git', :branch=>'1.9.3'
+gem "yamltest",'0.9.0', :git=>'https://github.com/zena/yamltest.git', :branch => '1.9.3'
 gem "activerecord", "3.2.22.2"
 gem "activesupport", "3.2.22.2"
 gem "sqlite3", "1.3.11"
