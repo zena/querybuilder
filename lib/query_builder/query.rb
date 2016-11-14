@@ -254,7 +254,7 @@ module QueryBuilder
         if block_given?
           on_clause = "#{block.call(alias_name)}"
         end
-        
+
         if type
           key = "#{table_name}=#{type}=#{alias_name}"
           @needed_join_tables[key] ||= begin
@@ -265,7 +265,7 @@ module QueryBuilder
           end
           return alias_name
         end
-        
+
         if on_clause && @tables.empty?
           # NO JOIN
           @where << on_clause
@@ -273,13 +273,13 @@ module QueryBuilder
         elsif on_clause
           on_clause = " ON #{on_clause}"
         end
-        
+
         if alias_name != table_name
           @tables << "#{table_name} AS #{alias_name}#{on_clause}"
         else
           @tables << "#{table_name}#{on_clause}"
         end
-        
+
         alias_name
       end
 
@@ -364,8 +364,8 @@ module QueryBuilder
       # of the running context.
       def eval_bound_value(value_as_string, connection, bindings)
         value = eval(value_as_string, bindings)
-        if value.respond_to?(:map) && !value.kind_of?(String) #!value.acts_like?(:string)
-          if value.respond_to?(:empty?) && value.empty?
+        if value.respond_to?(:map,true) && !value.kind_of?(String) #!value.acts_like?(:string)
+          if value.respond_to?(:empty?,true) && value.empty?
             connection.quote(nil)
           else
             value.map { |v| connection.quote(v) }.join(',')

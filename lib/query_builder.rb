@@ -18,7 +18,7 @@ module QueryBuilder
 
       # Inheritable accessor
       def query_compiler
-        @query_compiler ||= (superclass.respond_to?(:query_compiler) ? superclass.query_compiler : nil)
+        @query_compiler ||= (superclass.respond_to?(:query_compiler,true) ? superclass.query_compiler : nil)
       end
     end
   end

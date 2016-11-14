@@ -91,7 +91,7 @@ module QueryBuilder
               definitions.each do |klass, query_list|
                 begin
                   klass = QueryBuilder.resolve_const(klass)
-                  klass = klass.query_compiler if klass.respond_to?(:query_compiler)
+                  klass = klass.query_compiler if klass.respond_to?(:query_compiler,true)
                   raise ArgumentError.new("Invalid Processor class '#{klass}' in '#{file}' custom query. Should be a descendant of QueryBuilder::Processor or respond to query_compiler.") unless klass.ancestors.include?(Processor)
                 rescue NameError
                   raise ArgumentError.new("Unknown Processor class '#{klass}' in '#{file}' custom query.")
@@ -149,6 +149,7 @@ module QueryBuilder
         @sxp      = source.sxp
         @ancestor = source # used during class change to return back to previous 'this'
       elsif source.kind_of?(String)
+
         @sxp = Parser.parse(source)
 
         @context = opts.merge(:first => true, :last => true)
@@ -157,7 +158,6 @@ module QueryBuilder
         before_process
 
         process_all
-
         after_process
 
         if limit = @opts[:limit]
@@ -206,7 +206,7 @@ module QueryBuilder
       def default(key)
         @default[key] || self.class.defaults[key]
       end
-      
+
       # The passed :default scope is only applied on last context.
       def default_scope(context)
         if context[:last]
@@ -220,7 +220,7 @@ module QueryBuilder
         return sxp if sxp.kind_of?(String)
         op = OPERATOR_TO_METHOD[sxp.first] || sxp.first
         method = "process_#{op}"
-        if this.respond_to?(method)
+        if this.respond_to?(method,true)
           this.send(method, *sxp[1..-1])
         elsif sxp.size == 3
           op = METHOD_TO_OPERATOR[op] || sxp.first
@@ -500,7 +500,7 @@ module QueryBuilder
         res = RubyLess.translate_string(helper, string)
         res.literal ? quote(res.literal) : insert_bind(res)
       end
-      
+
       alias process_string process_dstring
 
       def process_rubyless(string)
@@ -712,7 +712,7 @@ module QueryBuilder
           @query.processor_class = processor.class
           @query.main_class = processor.resolve_main_class(processor.class.main_class)
           update_processor(processor)
-          
+
         end
       end
 
@@ -817,7 +817,7 @@ module QueryBuilder
               @query.add_table(main_table, main_table, avoid_alias)
               apply_scope(context[:scope])
             end
-            
+
             @query.add_table(use_name, table_name, avoid_alias, type, &block)
           elsif context[:scope_type] == :filter
             context[:scope_type] = nil

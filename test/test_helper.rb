@@ -12,7 +12,7 @@ require 'mock/dummy_processor'
 require 'mock/user_processor'
 require 'mock/dummy'
 
-gem 'activerecord', '>=2.3.18'
+#gem 'activerecord', '>=2.3.18'
 require 'active_record'
 
 require 'database'
